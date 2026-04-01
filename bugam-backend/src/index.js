@@ -41,6 +41,7 @@ app.use('/api/reportes', require('./routes/reportes')(pool));
 app.use('/api/usuarios', require('./routes/usuarios')(pool));
 app.use('/api/roles', require('./routes/roles')(pool));
 app.use('/api/bitacora', require('./routes/bitacora')(pool));
+app.use('/api/reservaciones', require('./routes/reservaciones')(pool));
 
 app.use(express.static(path.join(__dirname, '../../bugam-frontend/dist')));
 app.get('*', (req, res) => {

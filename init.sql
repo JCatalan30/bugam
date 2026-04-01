@@ -124,6 +124,19 @@ CREATE TABLE bitacora (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE reservaciones (
+    id SERIAL PRIMARY KEY,
+    ubicacion_id INTEGER REFERENCES ubicaciones(id),
+    cliente_nombre VARCHAR(100) NOT NULL,
+    telefono VARCHAR(20),
+    fecha_reserva DATE NOT NULL,
+    hora_reserva TIME NOT NULL,
+    num_personas INTEGER DEFAULT 1,
+    estado VARCHAR(20) CHECK (estado IN ('CONFIRMADA', 'CANCELADA', 'COMPLETADA')) DEFAULT 'CONFIRMADA',
+    notas TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Datos iniciales
 INSERT INTO roles (nombre, descripcion) VALUES 
     ('ADMIN', 'Administrador del sistema'),

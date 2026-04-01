@@ -128,6 +128,14 @@ docker-compose up --build
 | OCUPADA | Tiene cuenta activa |
 | MANTENIMIENTO | No disponible |
 
+### 9.4 Estados de Reservación
+
+| Estado | Descripción |
+|--------|-------------|
+| CONFIRMADA | Reservación activa |
+| COMPLETADA | Cliente usó la reservación |
+| CANCELADA | Cancelada por el cliente |
+
 ---
 
 ## 10. Estructura del Proyecto
@@ -200,6 +208,12 @@ bugam2026/
 - `GET /api/reportes/clientes-frecuentes` - Clientes frecuentes
 - `GET /api/reportes/ventas-usuario` - Ventas por usuario (mesero/cajero)
 
+### Reservaciones
+- `GET /api/reservaciones` - Listar reservaciones
+- `POST /api/reservaciones` - Crear reservación
+- `PUT /api/reservaciones/:id` - Actualizar reservación/estado
+- `DELETE /api/reservaciones/:id` - Cancelar reservación
+
 ## 12. Funcionalidades Implementadas
 
 ### 12.1 Módulo Mesero
@@ -257,6 +271,13 @@ Registra automáticamente:
 - Cerrar cuenta
 - Crear pedido
 - Actualizar estado de pedido
+
+### 12.7 Reservaciones
+- Crear reservaciones con fecha, hora, número de personas
+- Asignar ubicación (mesa/hamaca/cabaña)
+- Estados: CONFIRMADA, COMPLETADA, CANCELADA
+- Lista de reservaciones con búsqueda
+- Editar/cancelar reservaciones existentes
 
 ## 13. Detalle de Implementación
 
