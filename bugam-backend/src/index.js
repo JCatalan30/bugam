@@ -26,11 +26,6 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
-app.use(express.static(path.join(__dirname, '../../bugam-frontend/dist')));
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../bugam-frontend/dist/index.html'));
-});
-
 app.set('io', io);
 app.set('db', pool);
 
@@ -46,6 +41,11 @@ app.use('/api/reportes', require('./routes/reportes')(pool));
 app.use('/api/usuarios', require('./routes/usuarios')(pool));
 app.use('/api/roles', require('./routes/roles')(pool));
 app.use('/api/bitacora', require('./routes/bitacora')(pool));
+
+app.use(express.static(path.join(__dirname, '../../bugam-frontend/dist')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../bugam-frontend/dist/index.html'));
+});
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
