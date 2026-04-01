@@ -14,12 +14,14 @@ COPY init.sql ./
 
 RUN npm run build
 
-RUN mkdir -p nginx
+RUN apk add --no-cache nginx curl
+
+RUN mkdir -p /etc/nginx/conf.d
 
 RUN echo 'server { \
     listen 80; \
     server_name _; \
-    root /app/dist; \
+            root /app/bugam-frontend/dist; \
     index index.html; \
     location / { \
         try_files $uri $uri/ /index.html; \
@@ -32,21 +34,11 @@ RUN echo 'server { \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \
     } \
-}' > nginx/default.conf
-
-FROM nginx:alpine
-COPY --from=0 /app/nginx/default.conf /etc/nginx/conf.d/default.conf
-COPY --from=0 /app/bugam-backend /app/bugam-backend
-COPY --from=0 /app/dist /app/dist
-COPY --from=0 /app/init.sql /init.sql
-
-RUN apk add --no-cache nodejs npm curl
-
-WORKDIR /app/bugam-backend
+}' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD sh -c "curl -f http://localhost:3001/api/categorias || curl -f http://localhost"
+  CMD curl -f http://localhost || exit 1
 
-CMD sh -c "echo waiting for DB && sleep 8 && node index.js & nginx -g 'daemon off;'"
+CMD sh -c "echo waiting for DB && sleep 8 && node bugam-backend/src/index.js & nginx -g 'daemon off;'"
