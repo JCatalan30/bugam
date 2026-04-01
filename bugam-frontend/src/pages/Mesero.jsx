@@ -202,7 +202,14 @@ export default function Mesero({ user, onLogout }) {
 
   const cerrarCuenta = async () => {
     if (!cuentaActual) return
-    const result = await Swal.fire({ icon: 'question', title: 'Cerrar cuenta', text: '¿Confirmar cierre de cuenta?', showCancelButton: true, confirmButtonText: 'Sí, cerrar', cancelButtonText: 'Cancelar' })
+    const result = await Swal.fire({ 
+      icon: 'question', 
+      title: 'Cerrar cuenta', 
+      text: '¿Confirmar cierre de cuenta?', 
+      showCancelButton: true, 
+      confirmButtonText: 'Sí, cerrar', 
+      cancelButtonText: 'Cancelar' 
+    })
     if (!result.isConfirmed) return
 
     try {
@@ -211,6 +218,9 @@ export default function Mesero({ user, onLogout }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado: 'PENDIENTE_PAGO' })
       })
+      
+      await imprimirTicket()
+      
       setCuentaActual(null)
       setPedidoActual([])
       setPedidosCuenta([])
