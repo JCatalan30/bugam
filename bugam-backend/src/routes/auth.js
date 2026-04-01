@@ -97,7 +97,7 @@ module.exports = (pool) => {
       if (result.rows.length === 0) {
         recordFailedAttempt(clientIp, username);
         await pool.query(
-          'INSERT INTO bitacora_login (ip, username, resultado, timestamp) VALUES ($1, $2, $3, NOW())',
+          'INSERT INTO bitacora_login (ip, username, resultado, created_at) VALUES ($1, $2, $3, NOW())',
           [clientIp, username, 'FALLIDO_USUARIO_NO_ENCONTRADO']
         );
         return res.status(401).json({ error: 'Usuario no encontrado' });
@@ -109,7 +109,7 @@ module.exports = (pool) => {
       if (!validPassword) {
         recordFailedAttempt(clientIp, username);
         await pool.query(
-          'INSERT INTO bitacora_login (ip, username, resultado, timestamp) VALUES ($1, $2, $3, NOW())',
+          'INSERT INTO bitacora_login (ip, username, resultado, created_at) VALUES ($1, $2, $3, NOW())',
           [clientIp, username, 'FALLIDO_PASSWORD_INCORRECTO']
         );
         return res.status(401).json({ error: 'Contraseña incorrecta' });
@@ -117,7 +117,7 @@ module.exports = (pool) => {
       
       resetRateLimit(clientIp);
       await pool.query(
-        'INSERT INTO bitacora_login (ip, username, resultado, timestamp) VALUES ($1, $2, $3, NOW())',
+        'INSERT INTO bitacora_login (ip, username, resultado, created_at) VALUES ($1, $2, $3, NOW())',
         [clientIp, username, 'EXITOSO']
       );
       
