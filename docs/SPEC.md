@@ -4,9 +4,16 @@
 
 Sistema integral para gestionar pedidos y cuentas de clientes en un balneario que incluye servicio de restaurante. Permite llevar control de pedidos desde que el cliente llega hasta el cierre de cuenta.
 
-## 2. Flujo de Usuario
+## 2. URLs del Proyecto
 
-### 2.1 Flujo Principal
+| Entorno | URL | Base de datos |
+|---------|-----|---------------|
+| **Producción (Render)** | https://bugam.onrender.com | PostgreSQL en Render |
+| **Local** | http://localhost:3001 | PostgreSQL en Docker |
+
+## 3. Flujo de Usuario
+
+### 3.1 Flujo Principal
 
 ```
 RECEPCIÓN → MESERO → COCINA → CAJA → ADMIN
@@ -18,23 +25,55 @@ RECEPCIÓN → MESERO → COCINA → CAJA → ADMIN
 4. **Caja**: Cerrar cuentas, procesar pagos
 5. **Admin**: Gestión de menú, usuarios y reportes
 
-### 2.2 Escenarios
+### 3.2 Escenarios
 
 - **Cuenta única**: Cliente usa hamaca + restaurant, todo se carga a una cuenta
 - **Cuenta parcial**: Cliente puede pedir la cuenta en cualquier momento
 - **Split de pago**: Varios métodos de pago para una misma cuenta
 
-## 3. Tecnologías
+## 4. Tecnologías
 
 - **Backend**: Node.js + Express
-- **Frontend**: React
+- **Frontend**: React (Vite)
 - **Base de datos**: PostgreSQL
 - **Tiempo real**: Socket.io
 - **Contenedores**: Docker + Docker Compose
+- **Despliegue**: Render (Web Service)
 
-## 4. Schema de Base de Datos
+## 5. Setup Local
 
-### 4.1 Tablas Principales
+```bash
+# Clonar y entrar al directorio
+cd bugam2026
+
+# Iniciar con Docker Compose (puerto 3001)
+docker-compose up --build
+
+# Acceder a http://localhost:3001
+```
+
+### Variables de entorno local
+- `DATABASE_URL`: `postgres://bugam:bugam2026@postgres:5432/bugam`
+- `PORT`: 3000 (interno del contenedor)
+
+## 6. Despliegue en Render
+
+### Configuración del Web Service
+1. Crear Web Service desde GitHub (repositorio: JCatalan30/bugam)
+2. Dockerfile multi-etapa incluido en el proyecto
+3. Variables de entorno necesarias:
+   - `DATABASE_URL`: postgresql://bugam_db_user:890QkV9yrveOLxpNsJKe853pHcV8NY5x@dpg-d76b4rruibrs73bhq0lg-a.oregon-postgres.render.com:5432/bugam_db?sslmode=require
+   - `PORT`: 10000 (asignado por Render)
+
+### PostgreSQL en Render
+- Host: `dpg-d76b4rruibrs73bhq0lg-a.oregon-postgres.render.com`
+- Puerto: `5432`
+- Base de datos: `bugam_db`
+- Usuario: `bugam_db_user`
+
+## 7. Schema de Base de Datos
+
+### 7.1 Tablas Principales
 
 - `usuarios` - Empleados del sistema
 - `roles` - Roles de usuario
@@ -49,7 +88,7 @@ RECEPCIÓN → MESERO → COCINA → CAJA → ADMIN
 - `configuracion` - Configuración del sistema
 - `bitacora` - Bitácora de acciones
 
-## 5. Roles de Usuario
+## 8. Roles de Usuario
 
 | Rol | Descripción |
 |-----|-------------|
@@ -58,7 +97,7 @@ RECEPCIÓN → MESERO → COCINA → CAJA → ADMIN
 | MESERO | Tomar pedidos, ver cuentas |
 | COCINA | Ver pedidos, cambiar estado |
 
-## 6. Estados de Pedido
+## 9. Estados de Pedido
 
 | Estado | Descripción |
 |--------|-------------|
@@ -69,7 +108,7 @@ RECEPCIÓN → MESERO → COCINA → CAJA → ADMIN
 | ENTREGADO | Entregado al cliente |
 | CANCELADO | Cancelado |
 
-## 7. Estados de Cuenta
+## 10. Estados de Cuenta
 
 | Estado | Descripción |
 |--------|-------------|
@@ -80,30 +119,30 @@ RECEPCIÓN → MESERO → COCINA → CAJA → ADMIN
 
 ---
 
-## 8. Estructura del Proyecto
+## 11. Estructura del Proyecto
 
 ```
 bugam2026/
-├── docker-compose.yml      # Orquestación de servicios
-├── init.sql               # Schema de base de datos
+├── Dockerfile              # Contenedor único (frontend + backend + nginx)
+├── docker-compose.yml     # Desarrollo local con PostgreSQL
+├── init.sql              # Schema de base de datos
+├── package.json          # Workspaces (backend + frontend)
 ├── docs/
-│   └── SPEC.md           # Este documento
+│   └── SPEC.md          # Este documento
 ├── bugam-backend/
 │   ├── src/
-│   │   ├── index.js      # Entry point + Socket.io
+│   │   ├── index.js      # Entry point + Express + Socket.io + archivos estáticos
 │   │   └── routes/       # API routes
-│   ├── package.json
-│   └── Dockerfile
+│   └── package.json
 └── bugam-frontend/
     ├── src/
-    │   ├── pages/        # Vistas: Login, Mesero, Cocina, Caja, Admin
+    │   ├── pages/        # Login, Mesero, Cocina, Caja, Admin
     │   ├── components/
     │   └── App.jsx
-    ├── package.json
-    └── Dockerfile
+    └── package.json
 ```
 
-## 9. API Endpoints
+## 12. API Endpoints
 
 ### Autenticación
 - `POST /api/auth/login` - Iniciar sesión
@@ -141,62 +180,61 @@ bugam2026/
 - `GET /api/reportes/productos` - Productos más vendidos
 - `GET /api/reportes/resumen-dia` - Resumen del día
 
-## 10. Detalle de Implementación
+## 13. Detalle de Implementación
 
-### 10.1 Estructura de Archivos
+### 13.1 Arquitectura
 
-#### Backend (`bugam-backend/`)
-```
-src/
-├── index.js              # Servidor Express + Socket.io + PostgreSQL
-└── routes/
-    ├── auth.js           # Login con JWT y verificación de tokens
-    ├── ubicaciones.js    # CRUD de mesas/hamacas/cabañas
-    ├── categorias.js     # CRUD de categorías del menú
-    ├── productos.js      # CRUD de productos (con filtro por categoría)
-    ├── cuentas.js        # Apertura de cuentas, cerrar cuenta, vista con pedidos
-    ├── pedidos.js       # Crear pedidos (bebidas/alimentos), cambiar estados, detalles
-    ├── pagos.js         # Registro de pagos, métodos de pago, cierre automático de cuenta
-    ├── config.js        # Configuración del sistema (impuesto, nombre)
-    └── reportes.js      # Ventas, productos, resumen del día
-```
+El backend Express sirve tanto la API como los archivos estáticos del frontend:
+- Archivos estáticos: `../../bugam-frontend/dist`
+- Rutas API: `/api/*` (definidas antes del catch-all)
+- SPA routing: `*` → `index.html`
 
-#### Frontend (`bugam-frontend/`)
+### 13.2 Backend (`bugam-backend/src/`)
+
 ```
-src/
-├── main.jsx              # Entry point React
-├── App.jsx              # Router + gestión de sesión
-├── index.css            # Estilos globales (responsive, modal, etc.)
-└── pages/
-    ├── Login.jsx        # Login con redirección por rol
-    ├── Mesero.jsx       # Abrir cuenta, tomar pedidos, imprimir ticket, cerrar cuenta
-    ├── Cocina.jsx       # Ver pedidos de cocina (filtro notas=alimentos), cambiar estados
-    ├── Caja.jsx         # Listar cuentas, procesar pagos
-    └── Admin.jsx        # CRUD ubicaciones, menú, usuarios, empresa, reportes
+index.js              # Express + Socket.io + archivos estáticos
+routes/
+├── auth.js           # Login con JWT
+├── ubicaciones.js    # CRUD ubicaciones
+├── categorias.js     # CRUD categorías
+├── productos.js      # CRUD productos + inventario
+├── cuentas.js       # Gestión de cuentas
+├── pedidos.js       # Crear/actualizar pedidos
+├── pagos.js         # Registro de pagos
+├── config.js        # Configuración empresa
+├── reportes.js      # Reportes varios
+├── usuarios.js      # CRUD usuarios
+├── roles.js         # CRUD roles
+└── bitacora.js      # Bitácora del sistema
 ```
 
-### 10.2 Socket.io - Rooms y Eventos
+### 13.3 Frontend (`bugam-frontend/src/pages/`)
+
+```
+Login.jsx        # Login con redirección por rol
+Mesero.jsx       # Abrir cuenta, tomar pedidos, imprimir, cerrar
+Cocina.jsx       # Ver pedidos cocina, cambiar estados
+Caja.jsx         # Listar cuentas, procesar pagos
+Admin.jsx        # CRUD completo + reportes
+```
+
+### 13.4 Socket.io - Rooms y Eventos
 | Room | Eventos emite | Eventos escucha |
 |------|---------------|-----------------|
 | `kitchen` | `new-order`, `order-cancelled` | - |
 | `waiter` | `order-created`, `order-updated`, `kitchen-ready`, `payment-received`, `cuenta-created` | - |
 | `cashier` | `order-updated` | - |
 
-**Flujo de eventos:**
-- Mesero crea pedido → emite `new-order` a cocina, `order-created` a meseros
-- Cocina cambia estado → emite `order-updated` a meseros/caja, `kitchen-ready` cuando está LISTO
-- Cajero recibe pago → emite `payment-received` a meseros
-
-### 10.3 Estados de Ubicación
+### 13.5 Estados de Ubicación
 - `DISPONIBLE` - Libre para usar
 - `OCUPADA` - Tiene cuenta activa
 - `MANTENIMIENTO` - No disponible
 
-### 10.4 Campos de Pedido
-- `tipo`: PRESENCIAL o PARA_LLEVAR (para distinguir tipo de servicio)
+### 13.6 Campos de Pedido
+- `tipo`: PRESENCIAL o PARA_LLEVAR
 - `notas`: "bebidas" o "alimentos" (para filtrar qué va a cocina)
 
-### 10.5 Rutas Frontend
+### 13.7 Rutas Frontend
 | Ruta | Rol acceso |
 |------|------------|
 | `/login` | Público |
@@ -205,7 +243,7 @@ src/
 | `/caja` | CAJERO, ADMIN |
 | `/admin` | ADMIN |
 
-## 11. Lógica de Pedidos
+## 14. Lógica de Pedidos
 
 - El mesero selecciona productos y los separa en **bebidas** y **alimentos**
 - Las bebidas se envían alobar (no van a cocina)
@@ -213,7 +251,7 @@ src/
 - El dashboard de Cocina filtra pedidos donde `notas=alimentos`
 - Los cambios de estado en cocina se transmiten en tiempo real al mesero via Socket.io
 
-## 12. Flujo de Cierre de Cuenta
+## 15. Flujo de Cierre de Cuenta
 
 1. Mesero cierra la cuenta → estado cambia a `PENDIENTE_PAGO`
 2. Mesero puede imprimir ticket con detalle de pedidos
@@ -221,13 +259,14 @@ src/
 4. Cajero procesa pago → estado cambia a `CERRADA`
 5. La ubicación queda disponible automáticamente
 
-## 13. Configuración del Sistema
+## 16. Configuración del Sistema
 
 - Los precios de los productos **ya incluyen impuestos** (no se calcula adicional)
-- La tabla `configuracion` contiene: nombre_establecimiento, direccion, telefono, impuesto_porcentaje (no usado actualmente)
+- La tabla `configuracion` contiene: nombre_establecimiento, direccion, telefono
 
-## 14. Credenciales por Defecto
+## 17. Credenciales
 
+### Sistema
 | Usuario | Contraseña | Rol |
 |---------|------------|-----|
 | admin | admin123 | ADMIN |
@@ -235,6 +274,10 @@ src/
 | mesero | mesero123 | MESERO |
 | cocina | cocina123 | COCINA |
 
+### PostgreSQL Local
+- Usuario: `bugam`
+- Contraseña: `bugam2026`
+
 ---
 
-*Documento vivo - Actualizado: 2026-03-31*
+*Documento vivo - Actualizado: 2026-04-01*
