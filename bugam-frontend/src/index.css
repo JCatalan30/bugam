@@ -325,12 +325,6 @@ body {
   gap: 0.75rem;
 }
 
-@media (min-width: 768px) {
-  .menu-grid {
-    minmax(200px, 1fr);
-  }
-}
-
 .menu-item {
   background: var(--white);
   border: 2px solid var(--border);
