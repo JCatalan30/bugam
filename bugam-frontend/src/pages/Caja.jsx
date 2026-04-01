@@ -14,6 +14,8 @@ export default function Caja({ user, onLogout }) {
   const [referencia, setReferencia] = useState('')
   const [montoRecibido, setMontoRecibido] = useState('')
   const [metodoSeleccionado, setMetodoSeleccionado] = useState(null)
+  const [ultimoTicket, setUltimoTicket] = useState(null)
+  const [showPagoExitoso, setShowPagoExitoso] = useState(false)
   const socketRef = useRef(null)
 
   useEffect(() => {
@@ -73,9 +75,20 @@ export default function Caja({ user, onLogout }) {
       const data = await res.json()
       
       if (!esTransferencia) {
-        await imprimirTicketPagado(cuentaId)
+        await imprimirTicketPagado(cuentaId, montoRecibido)
       }
       
+      const cuentaData = await fetch(`${API_URL}/cuentas/${cuentaId}`).then(r => r.json())
+      const configs = await fetch(`${API_URL}/config`).then(r => r.json())
+      const configObj = configs.reduce((acc, c) => ({ ...acc, [c.clave]: c.valor }), {})
+      
+      setUltimoTicket({
+        cuenta: cuentaData,
+        config: configObj,
+        montoRecibido: esTransferencia ? null : montoRecibido
+      })
+      
+      setShowPagoExitoso(true)
       setCuentaSeleccionada(null)
       setShowTransferencia(false)
       setReferencia('')
@@ -90,7 +103,7 @@ export default function Caja({ user, onLogout }) {
     } catch (err) { console.error(err) }
   }
 
-  const imprimirTicketPagado = async (cuentaId) => {
+  const imprimirTicketPagado = async (cuentaId, montoRecibidoParam) => {
     try {
       const [cuentaRes, configRes] = await Promise.all([
         fetch(`${API_URL}/cuentas/${cuentaId}`),
@@ -103,7 +116,7 @@ export default function Caja({ user, onLogout }) {
       const nombreEstablecimiento = configObj.nombre_establecimiento || 'Balneario Bugambilias'
       const direccion = configObj.direccion || 'Av. Principal s/n'
       const telefono = configObj.telefono || 'Sin teléfono'
-      const cambio = montoRecibido && !isNaN(montoRecibido) ? parseFloat(montoRecibido) - parseFloat(cuenta.total) : 0
+      const cambio = montoRecibidoParam && !isNaN(montoRecibidoParam) ? parseFloat(montoRecibidoParam) - parseFloat(cuenta.total) : 0
       
       const fecha = new Date().toLocaleString('es-MX', { 
         year: 'numeric', month: '2-digit', day: '2-digit', 
@@ -190,6 +203,45 @@ export default function Caja({ user, onLogout }) {
     } catch (err) { console.error(err) }
   }
 
+  const enviarPorWhatsApp = () => {
+    if (!ultimoTicket) return
+    
+    const { cuenta, config, montoRecibido } = ultimoTicket
+    const nombreEstablecimiento = config.nombre_establecimiento || 'Balneario Bugambilias'
+    const direccion = config.direccion || 'Av. Principal s/n'
+    
+    const fecha = new Date().toLocaleString('es-MX', { 
+      year: 'numeric', month: '2-digit', day: '2-digit', 
+      hour: '2-digit', minute: '2-digit' 
+    })
+
+    let mensaje = `*${nombreEstablecimiento}*\n\n`
+    mensaje += `📋 *Cuenta #${cuenta.id}*\n`
+    mensaje += `📍 *Ubicación:* ${cuenta.ubicacion_nombre || 'N/A'}\n\n`
+    mensaje += `*Productos consumidos:*\n`
+    
+    cuenta.pedidos?.forEach(pedido => {
+      pedido.detalles?.forEach(det => {
+        mensaje += `• ${det.cantidad} x ${det.producto_nombre} - $${Number(det.subtotal || 0).toFixed(2)}\n`
+      })
+    })
+    
+    mensaje += `\n────────────────────\n`
+    mensaje += `*TOTAL: $${Number(cuenta.total || 0).toFixed(2)}*\n`
+    
+    if (montoRecibido && !isNaN(montoRecibido)) {
+      mensaje += `Efectivo: $${parseFloat(montoRecibido).toFixed(2)}\n`
+      mensaje += `Cambio: $${(parseFloat(montoRecibido) - parseFloat(cuenta.total)).toFixed(2)}\n`
+    }
+    
+    mensaje += `────────────────────\n`
+    mensaje += `📅 ${fecha}\n`
+    mensaje += `📍 ${direccion}\n\n`
+    mensaje += `¡Gracias por su visita!`
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, '_blank')
+  }
+
   if (loading) return <div className="text-center">Cargando...</div>
 
   return (
@@ -206,6 +258,17 @@ export default function Caja({ user, onLogout }) {
       </nav>
 
       <div className="main-content">
+        {showPagoExitoso && ultimoTicket && (
+          <div className="card mb-4" style={{background: '#dcfce7', border: '2px solid #22c55e'}}>
+            <h3 className="mb-2" style={{color: '#22c55e'}}>✓ Pago exitoso</h3>
+            <p className="mb-3">Cuenta #{ultimoTicket.cuenta.id} - Total: ${Number(ultimoTicket.cuenta.total || 0).toFixed(2)}</p>
+            <div className="flex gap-2">
+              <button className="btn btn-success" onClick={() => { setShowPagoExitoso(false); setUltimoTicket(null) }}>Aceptar</button>
+              <button className="btn btn-secondary" onClick={enviarPorWhatsApp}>📱 Enviar por WhatsApp</button>
+            </div>
+          </div>
+        )}
+
         {pagosPendientes.length > 0 && (
           <div className="card mb-4" style={{border: '2px solid var(--warning)'}}>
             <h3 className="mb-2" style={{color: 'var(--warning)'}}>⚠️ Transferencias pendientes de verificación</h3>

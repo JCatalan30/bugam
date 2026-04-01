@@ -227,6 +227,7 @@ bugam2026/
   - **Transferencia**: Con referencia, pendiente de verificación
 - Imprimir ticket con estado PAGADO y cambio
 - Transferencias pendientes de verificación
+- **Enviar ticket por WhatsApp**: Después de cobrar, mostrar opción para enviar ticket con datos del establecimiento, cuenta, productos, total y fecha
 
 ### 12.4 Módulo Admin
 - **Ubicaciones**: CRUD completo (crear, editar, eliminar)
@@ -354,7 +355,6 @@ El sistema detecta automáticamente si un producto es bebida buscando en el nomb
 - Alertas de stock bajo (notificaciones)
 - Ver cuenta en tiempo real en módulo Mesero
 - Reservaciones con fecha y hora
-- Envío de ticket por WhatsApp
 - Resumen de ventas por usuario
 
 ---
