@@ -18,7 +18,8 @@ RUN apk add --no-cache nginx curl
 
 
 
-RUN echo 'http { \
+RUN echo 'events { worker_connections 1024; } \
+http { \
     server { \
         listen 80; \
         server_name _; \
