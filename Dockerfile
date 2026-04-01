@@ -41,7 +41,7 @@ http { \
 
 EXPOSE 80
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost/ || exit 1
 
-CMD sh -c "echo waiting for DB && sleep 8 && node bugam-backend/src/index.js & nginx -g 'daemon off;'"
+CMD sh -c "echo '=== Checking dist ===' && ls -la /app/bugam-frontend/dist/ && echo 'waiting for DB' && sleep 15 && node bugam-backend/src/index.js & nginx -g 'daemon off;'"
