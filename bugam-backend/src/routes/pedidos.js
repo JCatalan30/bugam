@@ -121,6 +121,10 @@ module.exports = (pool) => {
         io.to('waiter').emit('kitchen-ready', result.rows[0]);
       }
       
+      if (estado === 'ENTREGADO' && result.rows[0].notas === 'bebidas') {
+        io.to('waiter').emit('bebida-entregada', result.rows[0]);
+      }
+      
       res.json(result.rows[0]);
     } catch (err) {
       res.status(500).json({ error: err.message });

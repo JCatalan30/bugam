@@ -18,7 +18,9 @@ export default function Mesero({ user, onLogout }) {
   useEffect(() => {
     console.log('Mesero component mounted, user:', user)
     fetchData()
-    
+  }, [])
+
+  useEffect(() => {
     const setupSocket = () => {
       if (socketRef.current) socketRef.current.disconnect()
       
@@ -39,19 +41,6 @@ export default function Mesero({ user, onLogout }) {
       socketRef.current.on('connect_error', (err) => {
         console.log('Socket connection error:', err)
       })
-      socketRef.current.on('order-updated', (pedido) => {
-        console.log('Order updated:', pedido)
-        if (cuentaActual) {
-          cargarCuenta(cuentaActual.id)
-        }
-      })
-      socketRef.current.on('kitchen-ready', (pedido) => {
-        console.log('Kitchen ready:', pedido)
-        if (cuentaActual && pedido.cuenta_id === cuentaActual.id) {
-          Swal.fire({ icon: 'success', title: 'Pedido listo', text: `El pedido #${pedido.id} está listo`, timer: 3000 })
-          cargarCuenta(cuentaActual.id)
-        }
-      })
     }
     
     setupSocket()
@@ -59,7 +48,46 @@ export default function Mesero({ user, onLogout }) {
     return () => {
       if (socketRef.current) socketRef.current.disconnect()
     }
-  }, [user?.id, cuentaActual?.id])
+  }, [])
+
+  useEffect(() => {
+    if (!socketRef.current) return
+
+    const handleOrderUpdated = (pedido) => {
+      console.log('Order updated:', pedido)
+      if (cuentaActual) {
+        cargarCuenta(cuentaActual.id)
+      }
+    }
+
+    const handleKitchenReady = (pedido) => {
+      console.log('Kitchen ready:', pedido)
+      if (cuentaActual && pedido.cuenta_id === cuentaActual.id) {
+        Swal.fire({ icon: 'success', title: '🍽️ Pedido de cocina listo', text: `El pedido #${pedido.id} está listo para servir`, timer: 5000 })
+        cargarCuenta(cuentaActual.id)
+      }
+    }
+
+    const handleBebidaEntregada = (pedido) => {
+      console.log('Bebida entregada:', pedido)
+      if (cuentaActual && pedido.cuenta_id === cuentaActual.id) {
+        Swal.fire({ icon: 'info', title: '🍺 Bebidas listas', text: `El pedido #${pedido.id} está listo para servir`, timer: 5000 })
+        cargarCuenta(cuentaActual.id)
+      }
+    }
+
+    socketRef.current.on('order-updated', handleOrderUpdated)
+    socketRef.current.on('kitchen-ready', handleKitchenReady)
+    socketRef.current.on('bebida-entregada', handleBebidaEntregada)
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('order-updated', handleOrderUpdated)
+        socketRef.current.off('kitchen-ready', handleKitchenReady)
+        socketRef.current.off('bebida-entregada', handleBebidaEntregada)
+      }
+    }
+  }, [cuentaActual])
 
   const cargarCuenta = async (cuentaId) => {
     try {
