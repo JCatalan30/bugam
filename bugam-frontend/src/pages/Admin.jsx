@@ -88,6 +88,24 @@ export default function Admin({ user, onLogout }) {
     } catch (err) { Swal.fire({ icon: 'error', title: 'Error' }) }
   }
 
+  const deleteUbicacion = async (id) => {
+    const result = await Swal.fire({
+      title: '¿Eliminar ubicación?',
+      text: 'Esta acción no se puede deshacer',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar'
+    })
+    if (result.isConfirmed) {
+      try {
+        await fetch(`${API_URL}/ubicaciones/${id}`, { method: 'DELETE' })
+        fetchData()
+        Swal.fire({ icon: 'success', title: 'Eliminado', timer: 2000 })
+      } catch (err) { Swal.fire({ icon: 'error', title: 'Error al eliminar' }) }
+    }
+  }
+
   const saveCategoria = async (data) => {
     try {
       const method = data.id ? 'PUT' : 'POST'
@@ -192,7 +210,7 @@ export default function Admin({ user, onLogout }) {
 
         {loading ? <div className="text-center">Cargando...</div> : (
           <>
-            {activeTab === 'ubicaciones' && (<div><div className="flex justify-between items-center mb-4"><h2>Ubicaciones</h2><button className="btn btn-primary" onClick={() => setEditItem({})}>+ Nueva</button></div><div className="table-responsive"><table className="table"><thead><tr><th>Nombre</th><th>Tipo</th><th>Capacidad</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>{ubicaciones.map(u => (<tr key={u.id}><td>{u.nombre}</td><td>{u.tipo}</td><td>{u.capacidad}</td><td><span className={`badge ${u.estado === 'DISPONIBLE' ? 'badge-success' : u.estado === 'OCUPADA' ? 'badge-warning' : 'badge-danger'}`}>{u.estado}</span></td><td><button className="btn btn-primary btn-sm" onClick={() => setEditItem(u)}>Editar</button></td></tr>))}</tbody></table></div></div>)}
+            {activeTab === 'ubicaciones' && (<div><div className="flex justify-between items-center mb-4"><h2>Ubicaciones</h2><button className="btn btn-primary" onClick={() => setEditItem({})}>+ Nueva</button></div><div className="table-responsive"><table className="table"><thead><tr><th>Nombre</th><th>Tipo</th><th>Capacidad</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>{ubicaciones.map(u => (<tr key={u.id}><td>{u.nombre}</td><td>{u.tipo}</td><td>{u.capacidad}</td><td><span className={`badge ${u.estado === 'DISPONIBLE' ? 'badge-success' : u.estado === 'OCUPADA' ? 'badge-warning' : 'badge-danger'}`}>{u.estado}</span></td><td><button className="btn btn-primary btn-sm" onClick={() => setEditItem(u)}>Editar</button> <button className="btn btn-danger btn-sm" onClick={() => deleteUbicacion(u.id)}>Eliminar</button></td></tr>))}</tbody></table></div></div>)}
 
             {activeTab === 'menu' && (<div className="grid grid-1 md:grid-2 gap-4"><div><div className="flex justify-between mb-4"><h2>Categorías</h2><button className="btn btn-primary" onClick={() => setEditItem({ type: 'categoria' })}>+ Nueva</button></div><div className="table-responsive"><table className="table"><thead><tr><th>Nombre</th><th>Orden</th><th>Acciones</th></tr></thead><tbody>{categorias.map(c => (<tr key={c.id}><td>{c.nombre}</td><td>{c.orden}</td><td><button className="btn btn-primary btn-sm" onClick={() => setEditItem({...c, type: 'categoria'})}>Editar</button></td></tr>))}</tbody></table></div></div><div><div className="flex justify-between mb-4"><h2>Productos</h2><button className="btn btn-primary" onClick={() => setEditItem({ type: 'producto' })}>+ Nuevo</button></div><div className="table-responsive"><table className="table"><thead><tr><th>Nombre</th><th>Precio</th><th>Categoría</th><th>Acciones</th></tr></thead><tbody>{productos.map(p => (<tr key={p.id}><td>{p.nombre}</td><td>${p.precio}</td><td>{p.categoria_nombre}</td><td><button className="btn btn-primary btn-sm" onClick={() => setEditItem({...p, type: 'producto'})}>Editar</button></td></tr>))}</tbody></table></div></div></div>)}
 
