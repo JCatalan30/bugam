@@ -88,6 +88,7 @@ docker-compose up --build
 - `metodos_pago` - Métodos de pago disponibles
 - `configuracion` - Configuración del sistema
 - `bitacora` - Bitácora de acciones
+- `reservaciones` - Reservaciones de mesas/hamacas
 
 ## 8. Roles de Usuario
 
@@ -373,12 +374,51 @@ El sistema detecta automáticamente si un producto es bebida buscando en el nomb
 
 ---
 
-## 17. Mejoras Pendientes
+## 17. Funcionalidades Completas
 
-- Alertas de stock bajo (notificaciones)
-- Ver cuenta en tiempo real en módulo Mesero
-- Reservaciones con fecha y hora
-- Resumen de ventas por usuario
+Todas las funcionalidades planificadas han sido implementadas:
+
+✅ Gestión de ubicaciones (mesas, hamacas, cabañas)
+✅ Menú con imágenes (subida a imgBB)
+✅ Inventario con control de stock
+✅ Alertas de stock bajo
+✅ Módulo Mesero con separación bebidas/alimentos
+✅ Módulo Cocina/Bar con tiempo real (Socket.io)
+✅ Módulo Caja con múltiples métodos de pago
+✅ Efectivo con cálculo de cambio
+✅ Transferencias con verificación
+✅ Tickets impresos (preliminar y final)
+✅ Envío de ticket por WhatsApp
+✅ Reservaciones con fecha y hora
+✅ Reportes: ventas, productos, corte caja, clientes
+✅ Reporte de ventas por usuario
+✅ Bitácora del sistema
+✅ Búsqueda en Admin
+✅ Tiempo real: Mesero ve actualizaciones sin recargar
+
+---
+
+## 18. Despliegue
+
+### Actualizar Base de Datos en Producción
+
+Al agregar nuevas tablas (como `reservaciones`), ejecutar en la base de datos de Render:
+
+```sql
+CREATE TABLE reservaciones (
+    id SERIAL PRIMARY KEY,
+    ubicacion_id INTEGER REFERENCES ubicaciones(id),
+    cliente_nombre VARCHAR(255) NOT NULL,
+    telefono VARCHAR(20),
+    fecha_reserva DATE NOT NULL,
+    hora_reserva TIME NOT NULL,
+    num_personas INTEGER DEFAULT 1,
+    estado VARCHAR(20) DEFAULT 'CONFIRMADA',
+    notas TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
 ---
 
