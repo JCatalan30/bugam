@@ -15,6 +15,7 @@ COPY bugam-backend/ ./bugam-backend/
 COPY bugam-frontend/ ./bugam-frontend/
 COPY init.sql ./
 
+WORKDIR /app/bugam-frontend
 RUN npm run build
 
 WORKDIR /app
