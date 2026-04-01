@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const http = require('http');
 const { Server } = require('socket.io');
 const { Pool } = require('pg');
@@ -24,6 +25,7 @@ const pool = new Pool({
 });
 
 app.use(cors());
+app.use(helmet());
 app.use(express.json());
 
 app.set('io', io);

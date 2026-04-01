@@ -185,3 +185,15 @@ INSERT INTO usuarios (username, password_hash, nombre, rol_id) VALUES
 -- Usuario cocina: cocina / cocina123
 INSERT INTO usuarios (username, password_hash, nombre, rol_id) VALUES 
     ('cocina', '$2a$10$EyYE9qZP3oOKhYK8d9EVWOHWalg6oOZqRlPlSQkLC7gg8hzSUWHm.', 'Cocinero', 4);
+
+-- Tabla de logs de intentos de login
+CREATE TABLE bitacora_login (
+    id SERIAL PRIMARY KEY,
+    ip VARCHAR(45) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    resultado VARCHAR(50) NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_bitacora_login_timestamp ON bitacora_login(timestamp);
+CREATE INDEX idx_bitacora_login_ip ON bitacora_login(ip);
