@@ -16,14 +16,15 @@ Sistema integral para gestionar pedidos y cuentas de clientes en un balneario qu
 ### 3.1 Flujo Principal
 
 ```
-RECEPCIÓN → MESERO → COCINA → CAJA → ADMIN
+RECEPCIÓN → MESERO → COCINA/BAR → CAJA → ADMIN
 ```
 
-1. **Recepción**: Asignar mesa/hamaca al cliente
-2. **Restaurant - Mesero**: Tomar pedidos, enviar a cocina
-3. **Cocina**: Preparar pedidos, notificar cuando estén listos
-4. **Caja**: Cerrar cuentas, procesar pagos
-5. **Admin**: Gestión de menú, usuarios y reportes
+1. **Recepción/Mesero**: Asignar mesa/hamaca al cliente
+2. **Mesero**: Tomar pedidos, separar bebidas/alimentos
+3. **Cocina**: Preparar alimentos (confirmar, listo)
+4. **Bar**: Preparar bebidas (marcar entregado)
+5. **Caja**: Cerrar cuentas, procesar pagos (efectivo/tarjeta/transferencia)
+6. **Admin**: Gestión de menú, usuarios, reportes
 
 ### 3.2 Escenarios
 
@@ -39,11 +40,12 @@ RECEPCIÓN → MESERO → COCINA → CAJA → ADMIN
 - **Tiempo real**: Socket.io
 - **Contenedores**: Docker + Docker Compose
 - **Despliegue**: Render (Web Service)
+- **Imágenes**: imgBB API (key configurada)
 
 ## 5. Setup Local
 
 ```bash
-# Clonar y entrar al directorio
+# Entrar al directorio
 cd bugam2026
 
 # Iniciar con Docker Compose (puerto 3001)
@@ -63,7 +65,6 @@ docker-compose up --build
 2. Dockerfile multi-etapa incluido en el proyecto
 3. Variables de entorno necesarias:
    - `DATABASE_URL`: postgresql://bugam_db_user:890QkV9yrveOLxpNsJKe853pHcV8NY5x@dpg-d76b4rruibrs73bhq0lg-a.oregon-postgres.render.com:5432/bugam_db?sslmode=require
-   - `PORT`: 10000 (asignado por Render)
 
 ### PostgreSQL en Render
 - Host: `dpg-d76b4rruibrs73bhq0lg-a.oregon-postgres.render.com`
@@ -79,7 +80,7 @@ docker-compose up --build
 - `roles` - Roles de usuario
 - `ubicaciones` - Mesas, hamacas, cabañas del establecimiento
 - `categorias` - Categorías del menú
-- `productos` - Menú disponible
+- `productos` - Menú disponible (con imagen, stock, tiempo preparación)
 - `cuentas` - Cuentas abiertas por mesa/cliente
 - `pedidos` - Pedidos realizados
 - `detalles_pedido` - Productos del pedido
@@ -97,7 +98,9 @@ docker-compose up --build
 | MESERO | Tomar pedidos, ver cuentas |
 | COCINA | Ver pedidos, cambiar estado |
 
-## 9. Estados de Pedido
+## 9. Estados
+
+### 9.1 Estados de Pedido
 
 | Estado | Descripción |
 |--------|-------------|
@@ -108,7 +111,7 @@ docker-compose up --build
 | ENTREGADO | Entregado al cliente |
 | CANCELADO | Cancelado |
 
-## 10. Estados de Cuenta
+### 9.2 Estados de Cuenta
 
 | Estado | Descripción |
 |--------|-------------|
@@ -117,13 +120,21 @@ docker-compose up --build
 | CERRADA | Pagada |
 | CANCELADA | Cancelada |
 
+### 9.3 Estados de Ubicación
+
+| Estado | Descripción |
+|--------|-------------|
+| DISPONIBLE | Libre para usar |
+| OCUPADA | Tiene cuenta activa |
+| MANTENIMIENTO | No disponible |
+
 ---
 
-## 11. Estructura del Proyecto
+## 10. Estructura del Proyecto
 
 ```
 bugam2026/
-├── Dockerfile              # Contenedor único (frontend + backend + nginx)
+├── Dockerfile              # Contenedor único (frontend + backend)
 ├── docker-compose.yml     # Desarrollo local con PostgreSQL
 ├── init.sql              # Schema de base de datos
 ├── package.json          # Workspaces (backend + frontend)
@@ -138,11 +149,12 @@ bugam2026/
     ├── src/
     │   ├── pages/        # Login, Mesero, Cocina, Caja, Admin
     │   ├── components/
+    │   ├── index.css
     │   └── App.jsx
     └── package.json
 ```
 
-## 12. API Endpoints
+## 11. API Endpoints
 
 ### Autenticación
 - `POST /api/auth/login` - Iniciar sesión
@@ -157,28 +169,91 @@ bugam2026/
 ### Menú
 - `GET /api/categorias` - Listar categorías
 - `GET /api/productos` - Listar productos
+- `GET /api/productos/inventario` - Ver inventario con stock
 - `POST/PUT/DELETE` - CRUD completo
 
 ### Cuentas
-- `GET /api/cuentas` - Listar cuentas
+- `GET /api/cuentas` - Listar cuentas (filtro por estado)
 - `GET /api/cuentas/:id` - Ver cuenta con pedidos
 - `POST /api/cuentas` - Abrir cuenta
-- `PUT /api/cuentas/:id` - Actualizar cuenta
+- `PUT /api/cuentas/:id` - Actualizar cuenta/cerrar
 
 ### Pedidos
-- `GET /api/pedidos` - Listar pedidos
-- `POST /api/pedidos` - Crear pedido
+- `GET /api/pedidos` - Listar pedidos (filtro por estado, notas)
+- `POST /api/pedidos` - Crear pedido con detalles
 - `PUT /api/pedidos/:id` - Actualizar estado
+- `PUT /api/pedidos/detalle/:id` - Actualizar detalle
 - `DELETE /api/pedidos/:id` - Cancelar pedido
 
 ### Pagos
 - `POST /api/pagos` - Registrar pago
 - `GET /api/pagos/metodos` - Listar métodos de pago
+- `GET /api/pagos/pendientes` - Transferencias pendientes
+- `PUT /api/pagos/:id/confirmar` - Confirmar pago
 
 ### Reportes
 - `GET /api/reportes/ventas` - Reporte de ventas
 - `GET /api/reportes/productos` - Productos más vendidos
 - `GET /api/reportes/resumen-dia` - Resumen del día
+- `GET /api/reportes/corte-caja` - Corte de caja
+- `GET /api/reportes/bitacora` - Bitácora reciente
+- `GET /api/reportes/clientes-frecuentes` - Clientes frecuentes
+
+## 12. Funcionalidades Implementadas
+
+### 12.1 Módulo Mesero
+- Seleccionar ubicación (mesa/hamaca/cabaña)
+- Abrir cuenta
+- Agregar productos del menú (con imágenes)
+- Separar automáticamente: bebidas → Bar, alimentos → Cocina
+- Ver historial de pedidos de la cuenta
+- Marcar productos como entregados
+- Cerrar cuenta → genera ticket
+- Regresar a seleccionar ubicación
+
+### 12.2 Módulo Cocina/Bar
+- Vista dividida: **Cocina** y **Bar**
+- Ver pedidos pendientes en tiempo real (Socket.io)
+- Cocina: Confirmar → En Preparación → Listo
+- Bar: Marcar Bebidas como Entregadas
+- Actualización automática al recibir nuevos pedidos
+
+### 12.3 Módulo Caja
+- Listar cuentas ABIERTAS y PENDIENTE_PAGO
+- Ver detalle de cuenta con pedidos
+- Métodos de pago:
+  - **Efectivo**: Captura monto recibido, calcula cambio
+  - **Tarjeta**: Proceso directo
+  - **Transferencia**: Con referencia, pendiente de verificación
+- Imprimir ticket con estado PAGADO y cambio
+- Transferencias pendientes de verificación
+
+### 12.4 Módulo Admin
+- **Ubicaciones**: CRUD completo (crear, editar, eliminar)
+- **Menú**: 
+  - Categorías: CRUD
+  - Productos: CRUD con imagen (subida a imgBB), stock, tiempo preparación
+- **Inventario**: Ver stock, productos bajo mínimo
+- **Usuarios**: CRUD con roles
+- **Empresa**: Configuración (nombre, dirección, teléfono)
+- **Reportes**: Ventas, productos, resumen del día
+- **Corte de caja**: Resumen por método de pago
+- **Histórico**: Ventas por fecha, cuentas cerradas
+- **Bitácora**: Registro de acciones del sistema
+- **Clientes frecuentes**: Análisis de clientes
+- **Búsqueda**: Filtrar productos, ubicaciones, usuarios
+
+### 12.5 Tickets
+- Ticket preliminar al cerrar cuenta (sin PAGADO)
+- Ticket final al cobrar (con ✓ PAGADO y cambio)
+- Incluye: logo, datos empresa, detalle de pedidos, total
+
+### 12.6 Bitácora
+Registra automáticamente:
+- Crear cuenta
+- Cerrar cuenta
+- Crear pedido
+- Actualizar estado de pedido
 
 ## 13. Detalle de Implementación
 
@@ -198,8 +273,8 @@ routes/
 ├── ubicaciones.js    # CRUD ubicaciones
 ├── categorias.js     # CRUD categorías
 ├── productos.js      # CRUD productos + inventario
-├── cuentas.js       # Gestión de cuentas
-├── pedidos.js       # Crear/actualizar pedidos
+├── cuentas.js       # Gestión de cuentas + bitácora
+├── pedidos.js       # Crear/actualizar pedidos + bitácora
 ├── pagos.js         # Registro de pagos
 ├── config.js        # Configuración empresa
 ├── reportes.js      # Reportes varios
@@ -213,9 +288,9 @@ routes/
 ```
 Login.jsx        # Login con redirección por rol
 Mesero.jsx       # Abrir cuenta, tomar pedidos, imprimir, cerrar
-Cocina.jsx       # Ver pedidos cocina, cambiar estados
-Caja.jsx         # Listar cuentas, procesar pagos
-Admin.jsx        # CRUD completo + reportes
+Cocina.jsx       # Ver pedidos cocina/bar, cambiar estados
+Caja.jsx         # Listar cuentas, procesar pagos, imprimir ticket
+Admin.jsx        # CRUD completo + reportes + búsqueda
 ```
 
 ### 13.4 Socket.io - Rooms y Eventos
@@ -223,18 +298,13 @@ Admin.jsx        # CRUD completo + reportes
 |------|---------------|-----------------|
 | `kitchen` | `new-order`, `order-cancelled` | - |
 | `waiter` | `order-created`, `order-updated`, `kitchen-ready`, `payment-received`, `cuenta-created` | - |
-| `cashier` | `order-updated` | - |
+| `cashier` | `order-updated`, `cuenta-updated` | - |
 
-### 13.5 Estados de Ubicación
-- `DISPONIBLE` - Libre para usar
-- `OCUPADA` - Tiene cuenta activa
-- `MANTENIMIENTO` - No disponible
+### 13.5 Detección de Bebidas
+El sistema detecta automáticamente si un producto es bebida buscando en el nombre de la categoría:
+- bebidas, bebida, refresco, agua, jugo, café, cafe, vino, cerveza
 
-### 13.6 Campos de Pedido
-- `tipo`: PRESENCIAL o PARA_LLEVAR
-- `notas`: "bebidas" o "alimentos" (para filtrar qué va a cocina)
-
-### 13.7 Rutas Frontend
+### 13.6 Rutas Frontend (Protegidas por Rol)
 | Ruta | Rol acceso |
 |------|------------|
 | `/login` | Público |
@@ -243,28 +313,27 @@ Admin.jsx        # CRUD completo + reportes
 | `/caja` | CAJERO, ADMIN |
 | `/admin` | ADMIN |
 
-## 14. Lógica de Pedidos
-
-- El mesero selecciona productos y los separa en **bebidas** y **alimentos**
-- Las bebidas se envían alobar (no van a cocina)
-- Los alimentos se envían a cocina (tipo=PRESENCIAL, notas=alimentos)
-- El dashboard de Cocina filtra pedidos donde `notas=alimentos`
-- Los cambios de estado en cocina se transmiten en tiempo real al mesero via Socket.io
-
-## 15. Flujo de Cierre de Cuenta
+## 14. Flujo de Cierre de Cuenta
 
 1. Mesero cierra la cuenta → estado cambia a `PENDIENTE_PAGO`
-2. Mesero puede imprimir ticket con detalle de pedidos
-3. Cliente va a Caja para pagar
-4. Cajero procesa pago → estado cambia a `CERRADA`
-5. La ubicación queda disponible automáticamente
+2. Se genera ticket preliminar automáticamente
+3. Ubicación se mantiene OCUPADA
+4. Cliente va a Caja
+5. Cajero selecciona cuenta
+6. Cliente elige método de pago:
+   - **Efectivo**: Ingresa monto → calcula cambio → cobrar
+   - **Tarjeta**: Cobrar directo
+   - **Transferencia**: Ingresa referencia → pendiente verificación
+7. Al cobrar → imprime ticket con ✓ PAGADO y cambio
+8. Ubicación queda DISPONIBLE automáticamente
 
-## 16. Configuración del Sistema
+## 15. Configuración del Sistema
 
 - Los precios de los productos **ya incluyen impuestos** (no se calcula adicional)
 - La tabla `configuracion` contiene: nombre_establecimiento, direccion, telefono
+- Imágenes de productos se suben a imgBB y se guarda la URL
 
-## 17. Credenciales
+## 16. Credenciales
 
 ### Sistema
 | Usuario | Contraseña | Rol |
@@ -277,6 +346,16 @@ Admin.jsx        # CRUD completo + reportes
 ### PostgreSQL Local
 - Usuario: `bugam`
 - Contraseña: `bugam2026`
+
+---
+
+## 17. Mejoras Pendientes
+
+- Alertas de stock bajo (notificaciones)
+- Ver cuenta en tiempo real en módulo Mesero
+- Reservaciones con fecha y hora
+- Envío de ticket por WhatsApp
+- Resumen de ventas por usuario
 
 ---
 
