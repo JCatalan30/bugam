@@ -112,6 +112,13 @@ export default function Mesero({ user, onLogout }) {
     }
   }
 
+  const esCategoriaBebida = (categoriaId) => {
+    const cat = categorias.find(c => c.id === categoriaId)
+    if (!cat) return false
+    const nombre = cat.nombre.toLowerCase()
+    return nombre.includes('bebida') || nombre.includes('bebidas') || nombre.includes('refresco') || nombre.includes('agua') || nombre.includes('jugo') || nombre.includes('café') || nombre.includes('cafe') || nombre.includes('vino') || nombre.includes('cerveza')
+  }
+
   const abrirCuenta = async (ubicacionId) => {
     try {
       const res = await fetch(`${API_URL}/cuentas`, {
@@ -132,7 +139,7 @@ export default function Mesero({ user, onLogout }) {
   }
 
   const agregarProducto = (producto) => {
-    const esBebida = producto.categoria_id === 1
+    const esBebida = esCategoriaBebida(producto.categoria_id)
     const existente = pedidoActual.find(p => p.producto_id === producto.id)
     if (existente) {
       setPedidoActual(pedidoActual.map(p => 
@@ -181,13 +188,12 @@ export default function Mesero({ user, onLogout }) {
           cuenta_id: cuentaActual.id,
           mesero_id: user.id,
           tipo: 'PRESENCIAL',
-          notas: tipo
+          notas: tipo,
+          detalles: items
         })
       })
       setPedidoActual(pedidoActual.filter(p => tipo === 'bebidas' ? !p.es_bebida : p.es_bebida))
-      const cuentaRes = await fetch(`${API_URL}/cuentas/${cuentaActual.id}`)
-      const data = await cuentaRes.json()
-      setPedidosCuenta(data.pedidos || [])
+      cargarCuenta(cuentaActual.id)
       Swal.fire({ icon: 'success', title: 'Enviado', text: tipo === 'bebidas' ? 'Bebidas enviadas alobar' : 'Pedido enviado a cocina', timer: 2000 })
     } catch (err) {
       console.error(err)
@@ -368,7 +374,7 @@ export default function Mesero({ user, onLogout }) {
                   <div className="menu-grid">
                     {productos.filter(p => p.categoria_id === cat.id).map(prod => (
                       <div key={prod.id} className="menu-item" onClick={() => agregarProducto(prod)}>
-                        {prod.imagen && <img src={prod.imagen} alt={prod.nombre} style={{width: '100%', height: 80, objectFit: 'cover', borderRadius: 4, marginBottom: 8}} />}
+                        {prod.imagen && <img src={prod.imagen} alt={prod.nombre} style={{width: '100%', height: 80, objectFit: 'cover', borderRadius: 4, marginBottom: 8}} onError={(e) => e.target.style.display = 'none'} />}
                         <p className="font-bold">{prod.nombre}</p>
                         <p className="text-sm text-gray">${prod.precio}</p>
                       </div>
