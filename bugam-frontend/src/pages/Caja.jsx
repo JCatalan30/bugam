@@ -12,6 +12,8 @@ export default function Caja({ user, onLogout }) {
   const [loading, setLoading] = useState(true)
   const [showTransferencia, setShowTransferencia] = useState(false)
   const [referencia, setReferencia] = useState('')
+  const [montoRecibido, setMontoRecibido] = useState('')
+  const [metodoSeleccionado, setMetodoSeleccionado] = useState(null)
   const socketRef = useRef(null)
 
   useEffect(() => {
@@ -69,9 +71,16 @@ export default function Caja({ user, onLogout }) {
         body: JSON.stringify(payload)
       })
       const data = await res.json()
+      
+      if (!esTransferencia) {
+        await imprimirTicketPagado(cuentaId)
+      }
+      
       setCuentaSeleccionada(null)
       setShowTransferencia(false)
       setReferencia('')
+      setMontoRecibido('')
+      setMetodoSeleccionado(null)
       fetchData()
       if (data.necesitaVerificacion) {
         Swal.fire({ icon: 'info', title: 'Pago pendiente', text: 'La transferencia está pendiente de verificación', timer: 3000 })
@@ -79,6 +88,96 @@ export default function Caja({ user, onLogout }) {
         Swal.fire({ icon: 'success', title: 'Pago registrado', timer: 2000 })
       }
     } catch (err) { console.error(err) }
+  }
+
+  const imprimirTicketPagado = async (cuentaId) => {
+    try {
+      const [cuentaRes, configRes] = await Promise.all([
+        fetch(`${API_URL}/cuentas/${cuentaId}`),
+        fetch(`${API_URL}/config`)
+      ])
+      const cuenta = await cuentaRes.json()
+      const configs = await configRes.json()
+      const configObj = configs.reduce((acc, c) => ({ ...acc, [c.clave]: c.valor }), {})
+      
+      const nombreEstablecimiento = configObj.nombre_establecimiento || 'Balneario Bugambilias'
+      const direccion = configObj.direccion || 'Av. Principal s/n'
+      const telefono = configObj.telefono || 'Sin teléfono'
+      const cambio = montoRecibido && !isNaN(montoRecibido) ? parseFloat(montoRecibido) - parseFloat(cuenta.total) : 0
+      
+      const fecha = new Date().toLocaleString('es-MX', { 
+        year: 'numeric', month: '2-digit', day: '2-digit', 
+        hour: '2-digit', minute: '2-digit' 
+      })
+
+      const contenido = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Ticket - ${nombreEstablecimiento}</title>
+  <style>
+    body { font-family: 'Courier New', monospace; font-size: 12px; width: 280px; margin: 0 auto; padding: 10px; }
+    .header { text-align: center; margin-bottom: 10px; }
+    .pagado { background: #22c55e; color: white; padding: 10px; text-align: center; font-weight: bold; margin-bottom: 10px; border-radius: 4px; }
+    .logo { width: 80px; height: auto; margin-bottom: 5px; }
+    h2 { margin: 5px 0; font-size: 14px; }
+    .info { font-size: 10px; color: #666; }
+    .divider { border-top: 1px dashed #333; margin: 8px 0; }
+    .total { font-weight: bold; font-size: 14px; }
+    .cambio { background: #fef3c7; padding: 8px; border-radius: 4px; margin-top: 10px; }
+    .gracias { text-align: center; margin-top: 10px; font-style: italic; }
+    @media print { body { width: auto; } }
+  </style>
+</head>
+<body>
+  <div class="pagado">✓ PAGADO</div>
+  <div class="header">
+    <img src="/logo.png" alt="Logo" class="logo" />
+    <h2>${nombreEstablecimiento}</h2>
+    <div class="info">${direccion}</div>
+    <div class="info">Tel: ${telefono}</div>
+  </div>
+  <div class="divider"></div>
+  <div><strong>Fecha:</strong> ${fecha}</div>
+  <div><strong>Cuenta:</strong> #${cuenta.id}</div>
+  <div><strong>Mesa/Hamaca:</strong> ${cuenta.ubicacion_nombre || 'N/A'}</div>
+  <div class="divider"></div>
+  <div><strong>Pedidos:</strong></div>
+  ${cuenta.pedidos?.map(p => `
+  <div style="margin-top: 5px;">Pedido #${p.id}</div>
+  ${p.detalles?.map(d => `<div>  ${d.cantidad} x ${d.producto_nombre}......$${Number(d.subtotal || 0).toFixed(2)}</div>`).join('')}
+  `).join('')}
+  <div class="divider"></div>
+  <div class="total" style="display: flex; justify-content: space-between;"><span>TOTAL:</span><span>$${Number(cuenta.total || 0).toFixed(2)}</span></div>
+  ${montoRecibido && !isNaN(montoRecibido) && parseFloat(montoRecibido) > parseFloat(cuenta.total) ? `
+  <div class="cambio">
+    <div><strong>Efectivo:</strong> $${parseFloat(montoRecibido).toFixed(2)}</div>
+    <div><strong>Cambio:</strong> $${cambio.toFixed(2)}</div>
+  </div>
+  ` : ''}
+  <div class="divider"></div>
+  <div class="gracias">Gracias por su visita!</div>
+  <div class="gracias" style="font-size: 10px;">Vuelva pronto</div>
+</body>
+</html>`
+
+      const ventana = window.open('', '_blank', 'width=320,height=600')
+      if (ventana) {
+        ventana.document.write(contenido)
+        ventana.document.close()
+        setTimeout(() => ventana.print(), 250)
+      }
+    } catch (err) {
+      console.error('Error al imprimir:', err)
+    }
+  }
+
+  const seleccionarMetodo = (metodo) => {
+    setMetodoSeleccionado(metodo)
+    if (metodo.nombre === 'EFECTIVO') {
+      setMontoRecibido('')
+    }
   }
 
   const confirmarPago = async (pagoId) => {
@@ -169,13 +268,37 @@ export default function Caja({ user, onLogout }) {
                 {!showTransferencia ? (
                   <>
                     <h4 className="mt-4 mb-2">Pagar</h4>
-                    <div className="grid grid-2">
-                      {metodosPago.map(metodo => (
-                        <button key={metodo.id} className="btn btn-success" onClick={() => metodo.nombre === 'TRANSFERENCIA' ? setShowTransferencia(true) : procesarPago(cuentaSeleccionada.id, cuentaSeleccionada.total, metodo.id)}>
-                          {metodo.nombre === 'TRANSFERENCIA' ? '💸 Transferencia' : metodo.nombre}
-                        </button>
-                      ))}
-                    </div>
+                    {metodoSeleccionado?.nombre === 'EFECTIVO' ? (
+                      <div>
+                        <div className="form-group">
+                          <label className="label">Total a pagar</label>
+                          <input className="input" type="text" value={`$${cuentaSeleccionada.total}`} disabled />
+                        </div>
+                        <div className="form-group">
+                          <label className="label">Monto recibido</label>
+                          <input className="input" type="number" value={montoRecibido} onChange={e => setMontoRecibido(e.target.value)} placeholder="0.00" step="0.01" min="0" />
+                        </div>
+                        {montoRecibido && !isNaN(montoRecibido) && parseFloat(montoRecibido) >= parseFloat(cuentaSeleccionada.total) && (
+                          <div className="card" style={{background: '#dcfce7', marginBottom: '1rem'}}>
+                            <p className="font-bold">Cambio: ${(parseFloat(montoRecibido) - parseFloat(cuentaSeleccionada.total)).toFixed(2)}</p>
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <button className="btn btn-success" onClick={() => procesarPago(cuentaSeleccionada.id, cuentaSeleccionada.total, metodoSeleccionado.id)} disabled={!montoRecibido || parseFloat(montoRecibido) < parseFloat(cuentaSeleccionada.total)}>
+                            ✓ Cobrar
+                          </button>
+                          <button className="btn btn-secondary" onClick={() => { setMetodoSeleccionado(null); setMontoRecibido('') }}>Cancelar</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-2">
+                        {metodosPago.map(metodo => (
+                          <button key={metodo.id} className="btn btn-success" onClick={() => metodo.nombre === 'TRANSFERENCIA' ? setShowTransferencia(true) : metodo.nombre === 'EFECTIVO' ? seleccionarMetodo(metodo) : procesarPago(cuentaSeleccionada.id, cuentaSeleccionada.total, metodo.id)}>
+                            {metodo.nombre === 'TRANSFERENCIA' ? '💸 Transferencia' : metodo.nombre === 'EFECTIVO' ? '💵 Efectivo' : metodo.nombre}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="mt-4">
