@@ -168,7 +168,7 @@ export default function Admin({ user, onLogout }) {
     try {
       const formData = new FormData()
       formData.append('image', file)
-      const res = await fetch('https://api.imgbb.com/1/upload?key=abf2cb228f2a6e3a3e30c3c9d30e6c5f', {
+      const res = await fetch('https://api.imgbb.com/1/upload?key=50b033ebfd2dba43bf1aeb1c28678394', {
         method: 'POST',
         body: formData
       })
