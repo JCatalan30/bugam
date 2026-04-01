@@ -247,20 +247,100 @@ bugam2026/
 - **Enviar ticket por WhatsApp**: Después de cobrar, mostrar opción para enviar ticket con datos del establecimiento, cuenta, productos, total y fecha
 
 ### 12.4 Módulo Admin
-- **Ubicaciones**: CRUD completo (crear, editar, eliminar)
-- **Menú**: 
-  - Categorías: CRUD
-  - Productos: CRUD con imagen (subida a imgBB), stock, tiempo preparación
-- **Inventario**: Ver stock, productos bajo mínimo
-- **Usuarios**: CRUD con roles
-- **Empresa**: Configuración (nombre, dirección, teléfono)
-- **Reportes**: Ventas, productos, resumen del día
-- **Corte de caja**: Resumen por método de pago
-- **Histórico**: Ventas por fecha, cuentas cerradas
-- **Bitácora**: Registro de acciones del sistema
-- **Clientes frecuentes**: Análisis de clientes
-- **Ventas por Usuario**: Ventas por mesero/cajero con filtros de fecha
-- **Búsqueda**: Filtrar productos, ubicaciones, usuarios
+
+El módulo Admin es el panel de control completo del sistema. Solo accesible para usuarios con rol ADMIN.
+
+#### 12.4.1 Ubicaciones
+Gestión de espacios físicos del establecimiento.
+- **Crear**: Nombre, tipo (MESA/HAMACA/CABANA), capacidad
+- **Editar**: Modificar datos existentes
+- **Eliminar**: Quitar ubicaciones
+- **Estados**: DISPONIBLE, OCUPADA, MANTENIMIENTO
+- **Búsqueda**: Filtrar por nombre
+
+#### 12.4.2 Menú
+Gestión de categorías y productos del restaurante.
+- **Categorías**: Crear, editar, ordenar menús
+- **Productos**: 
+  - Nombre, descripción, precio
+  - Imagen (subida a imgBB)
+  - Categoría asignada
+  - Stock y stock mínimo
+  - Tiempo de preparación (minutos)
+- **Búsqueda**: Filtrar productos por nombre
+
+#### 12.4.3 Inventario
+Control de stock de productos.
+- Lista todos los productos con stock actual
+- Indicador visual: OK (verde) / Bajo (rojo)
+- Productos ordenados: primero los que están bajo stock
+- **Alertas**: Notificación al cargar cuando hay productos bajo mínimo
+- Botón "Ver Inventario" desde la alerta
+- **Búsqueda**: Filtrar por nombre
+
+#### 12.4.4 Usuarios
+Gestión de empleados del sistema.
+- Crear usuario: username, password, nombre, rol
+- Editar: modificar datos, cambiar contraseña
+- Activar/Desactivar usuarios
+- Roles disponibles: ADMIN, CAJERO, MESERO, COCINA
+- **Búsqueda**: Filtrar por username o nombre
+
+#### 12.4.5 Empresa
+Configuración general del establecimiento.
+- Nombre del negocio
+- Dirección
+- Teléfono
+- Estos datos aparecen en los tickets
+
+#### 12.4.6 Reportes
+Análisis de ventas y operaciones.
+- **Resumen del día**: Cuentas, pedidos, ventas totales
+- **Productos más vendidos**: Cantidad y total por producto
+- Filtros por rango de fechas
+- Exportar a PDF
+
+#### 12.4.7 Corte de Caja
+Resumen de ventas del día.
+- Total de cuentas cerradas
+- Total de ventas
+- Desglose por método de pago (efectivo, tarjeta, transferencia)
+- Top 5 productos vendidos
+
+#### 12.4.8 Histórico
+Historial de operaciones pasadas.
+- **Ventas por fecha**: Lista de días con pedidos y totales
+- **Cuentas cerradas**: Últimas 20 cuentas pagadas
+- Filtros por rango de fechas
+
+#### 12.4.9 Bitácora
+Registro de acciones en el sistema.
+- Todas las operaciones registradas:
+  - Crear cuenta
+  - Cerrar cuenta
+  - Crear pedido
+  - Actualizar pedido
+- Muestra: fecha, usuario, acción, entidad
+- Últimas 50 entradas
+
+#### 12.4.10 Clientes Frecuentes
+Análisis de clientes recurrentes.
+- Lista de clientes ordenados por gasto
+- Muestra: nombre, visitas, gasto total
+
+#### 12.4.11 Ventas por Usuario
+Desempeño de empleados.
+- Ventas agrupadas por mesero/cajero
+- Muestra: usuario, cuentas atendidas, total ventas, pedidos
+- Filtros por rango de fechas
+- Totales generales
+
+#### 12.4.12 Reservaciones
+Gestión de reservas anticipadas.
+- **Campos**: cliente, teléfono, ubicación, fecha, hora, número de personas, notas
+- **Estados**: CONFIRMADA, COMPLETADA, CANCELADA
+- Crear, editar, cancelar reservaciones
+- **Búsqueda**: Filtrar por cliente
 
 ### 12.5 Tickets
 - Ticket preliminar al cerrar cuenta (sin PAGADO)
@@ -467,3 +547,4 @@ CREATE TABLE bitacora_login (
 ---
 
 *Documento vivo - Actualizado: 2026-04-01*
+*Última actualización: Módulo Admin documentado*
