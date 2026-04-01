@@ -22,14 +22,22 @@ module.exports = (pool) => {
       const params = [];
       
       if (estado) {
-        params.push(estado);
-        query += ` WHERE c.estado = $${params.length}`;
+        const estados = estado.split(',');
+        if (estados.length === 1) {
+          params.push(estado);
+          query += ` WHERE c.estado = $${params.length}`;
+        } else {
+          query += ` WHERE c.estado IN (${estados.map((_, i) => `$${params.length + i + 1}`).join(',')})`;
+          params.push(...estados);
+        }
       }
       
       query += ' ORDER BY c.fecha_apertura DESC';
+      console.log('Query:', query, 'Params:', params);
       const result = await pool.query(query, params);
       res.json(result.rows);
     } catch (err) {
+      console.error('Error en GET /cuentas:', err);
       res.status(500).json({ error: err.message });
     }
   });
