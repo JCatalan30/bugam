@@ -5,7 +5,9 @@ const API_URL = '/api'
 
 export default function Cocina({ user, onLogout }) {
   const [pedidos, setPedidos] = useState([])
+  const [bebidas, setBebidas] = useState([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('cocina')
   const socketRef = useRef(null)
 
   useEffect(() => {
@@ -27,10 +29,18 @@ export default function Cocina({ user, onLogout }) {
       })
       socketRef.current.on('new-order', (pedido) => {
         console.log('New order received:', pedido)
-        fetchPedidos()
+        if (activeTab === 'cocina') {
+          fetchPedidos()
+        } else {
+          fetchBebidas()
+        }
       })
       socketRef.current.on('order-cancelled', () => {
-        fetchPedidos()
+        if (activeTab === 'cocina') {
+          fetchPedidos()
+        } else {
+          fetchBebidas()
+        }
       })
     }
     
@@ -61,6 +71,34 @@ export default function Cocina({ user, onLogout }) {
     }
   }
 
+  const fetchBebidas = async () => {
+    try {
+      const res = await fetch(`${API_URL}/pedidos?estado=PENDIENTE,CONFIRMADO,EN_PREPARACION&notas=bebidas`)
+      const data = await res.json()
+      
+      const pedidosConDetalles = await Promise.all(data.map(async (pedido) => {
+        const cuentaRes = await fetch(`${API_URL}/cuentas/${pedido.cuenta_id}`)
+        const cuentaData = await cuentaRes.json()
+        const pedidoData = cuentaData.pedidos?.find(p => p.id === pedido.id)
+        return pedidoData || pedido
+      }))
+      
+      setBebidas(pedidosConDetalles)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'cocina') {
+      fetchPedidos()
+    } else {
+      fetchBebidas()
+    }
+  }, [activeTab])
+
   const actualizarEstado = async (pedidoId, nuevoEstado) => {
     try {
       await fetch(`${API_URL}/pedidos/${pedidoId}`, {
@@ -68,10 +106,18 @@ export default function Cocina({ user, onLogout }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado: nuevoEstado })
       })
-      fetchPedidos()
+      if (activeTab === 'cocina') {
+        fetchPedidos()
+      } else {
+        fetchBebidas()
+      }
     } catch (err) {
       console.error(err)
     }
+  }
+
+  const marcarBebidaEntregada = async (pedidoId) => {
+    await actualizarEstado(pedidoId, 'ENTREGADO')
   }
 
   const getStatusBadge = (estado) => {
@@ -100,13 +146,20 @@ export default function Cocina({ user, onLogout }) {
       </nav>
 
       <div className="main-content">
-        <h2 className="mb-4">Pedidos</h2>
+        <div className="tabs mb-4">
+          <button className={`tab ${activeTab === 'cocina' ? 'active' : ''}`} onClick={() => setActiveTab('cocina')}>🍽️ Cocina</button>
+          <button className={`tab ${activeTab === 'bar' ? 'active' : ''}`} onClick={() => setActiveTab('bar')}>🍺 Bar</button>
+        </div>
         
-        {pedidos.length === 0 ? (
+        <h2 className="mb-4">{activeTab === 'cocina' ? 'Pedidos de Cocina' : 'Pedidos de Bar'}</h2>
+        
+        {activeTab === 'cocina' && pedidos.length === 0 ? (
           <p className="text-gray text-center">No hay pedidos pendientes</p>
+        ) : activeTab === 'bar' && bebidas.length === 0 ? (
+          <p className="text-gray text-center">No hay bebidas pendientes</p>
         ) : (
           <div className="grid grid-3">
-            {pedidos.map(pedido => (
+            {(activeTab === 'cocina' ? pedidos : bebidas).map(pedido => (
               <div key={pedido.id} className="card">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-bold">Pedido #{pedido.id}</span>
@@ -124,20 +177,32 @@ export default function Cocina({ user, onLogout }) {
                 </div>
                 
                 <div className="flex gap-2">
-                  {pedido.estado === 'PENDIENTE' && (
-                    <button className="btn btn-primary" onClick={() => actualizarEstado(pedido.id, 'EN_PREPARACION')}>
-                      Confirmar
-                    </button>
-                  )}
-                  {pedido.estado === 'EN_PREPARACION' && (
-                    <button className="btn btn-success" onClick={() => actualizarEstado(pedido.id, 'LISTO')}>
-                      Listo
-                    </button>
-                  )}
-                  {pedido.estado === 'LISTO' && (
-                    <button className="btn btn-secondary" onClick={() => actualizarEstado(pedido.id, 'ENTREGADO')}>
-                      Entregado
-                    </button>
+                  {activeTab === 'cocina' ? (
+                    <>
+                      {pedido.estado === 'PENDIENTE' && (
+                        <button className="btn btn-primary" onClick={() => actualizarEstado(pedido.id, 'EN_PREPARACION')}>
+                          Confirmar
+                        </button>
+                      )}
+                      {pedido.estado === 'EN_PREPARACION' && (
+                        <button className="btn btn-success" onClick={() => actualizarEstado(pedido.id, 'LISTO')}>
+                          Listo
+                        </button>
+                      )}
+                      {pedido.estado === 'LISTO' && (
+                        <button className="btn btn-secondary" onClick={() => actualizarEstado(pedido.id, 'ENTREGADO')}>
+                          Entregado
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {['PENDIENTE', 'CONFIRMADO', 'EN_PREPARACION', 'LISTO'].includes(pedido.estado) && (
+                        <button className="btn btn-success" onClick={() => marcarBebidaEntregada(pedido.id)}>
+                          ✓ Marcar Entregado
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
