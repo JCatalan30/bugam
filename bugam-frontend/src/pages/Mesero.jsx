@@ -231,13 +231,23 @@ export default function Mesero({ user, onLogout }) {
   }
 
   const imprimirTicket = async () => {
-    if (!cuentaActual) return
+    const cuentaId = cuentaActual?.id
+    if (!cuentaId) {
+      console.error('No hay cuenta para imprimir')
+      return
+    }
     
     try {
       const [cuentaRes, configRes] = await Promise.all([
-        fetch(`${API_URL}/cuentas/${cuentaActual.id}`),
+        fetch(`${API_URL}/cuentas/${cuentaId}`),
         fetch(`${API_URL}/config`)
       ])
+      
+      if (!cuentaRes.ok) {
+        console.error('Error al obtener cuenta')
+        return
+      }
+      
       const cuenta = await cuentaRes.json()
       const configs = await configRes.json()
       const configObj = configs.reduce((acc, c) => ({ ...acc, [c.clave]: c.valor }), {})
@@ -285,7 +295,7 @@ export default function Mesero({ user, onLogout }) {
   <div><strong>Pedidos:</strong></div>
   ${cuenta.pedidos?.map(p => `
   <div style="margin-top: 5px;">Pedido #${p.id} - ${p.estado}</div>
-  ${p.detalles?.map(d => `<div>  ${d.cantidad} x ${d.producto_nombre}......$${d.subtotal.toFixed(2)}</div>`).join('')}
+  ${p.detalles?.map(d => `<div>  ${d.cantidad} x ${d.producto_nombre}......$${Number(d.subtotal || 0).toFixed(2)}</div>`).join('')}
   `).join('')}
   <div class="divider"></div>
   <div class="total" style="display: flex; justify-content: space-between;"><span>TOTAL:</span><span>$${Number(cuenta.total || 0).toFixed(2)}</span></div>
@@ -297,11 +307,15 @@ export default function Mesero({ user, onLogout }) {
 </html>`
 
       const ventana = window.open('', '_blank', 'width=320,height=600')
-      ventana.document.write(contenido)
-      ventana.document.close()
-      ventana.print()
+      if (ventana) {
+        ventana.document.write(contenido)
+        ventana.document.close()
+        setTimeout(() => ventana.print(), 250)
+      } else {
+        Swal.fire({ icon: 'warning', title: 'Bloqueador de popups', text: 'Permite popups para imprimir el ticket' })
+      }
     } catch (err) {
-      console.error(err)
+      console.error('Error al imprimir:', err)
     }
   }
 

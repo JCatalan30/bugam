@@ -31,8 +31,8 @@ function App() {
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
           <Route path="/mesero" element={user ? <Mesero user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
           <Route path="/cocina" element={user ? <Cocina user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
-          <Route path="/caja" element={user ? <Caja user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
-          <Route path="/admin" element={user ? <Admin user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
+          <Route path="/caja" element={user && ['CAJERO', 'ADMIN'].includes(user.rol) ? <Caja user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
+          <Route path="/admin" element={user && user.rol === 'ADMIN' ? <Admin user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </div>
