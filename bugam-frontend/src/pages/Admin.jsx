@@ -22,8 +22,43 @@ export default function Admin({ user, onLogout }) {
   const [filtros, setFiltros] = useState({ fecha_inicio: '', fecha_fin: '' })
   const [busqueda, setBusqueda] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [stockAlerts, setStockAlerts] = useState([])
 
   useEffect(() => { setBusqueda('') }, [activeTab])
+
+  useEffect(() => {
+    verificarStockBajo()
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'inventario') {
+      verificarStockBajo()
+    }
+  }, [activeTab])
+
+  const verificarStockBajo = async () => {
+    try {
+      const res = await fetch(`${API_URL}/productos/stock-bajo`)
+      const data = await res.json()
+      setStockAlerts(data)
+      if (data.length > 0) {
+        const productosList = data.map(p => `${p.nombre}: ${p.stock}/${p.stock_minimo}`).join('\n')
+        Swal.fire({
+          icon: 'warning',
+          title: `⚠️ ${data.length} producto(s) con stock bajo`,
+          html: `<pre style="text-align: left; font-size: 12px;">${productosList}</pre>`,
+          confirmButtonText: 'Ver Inventario',
+          cancelButtonText: 'Cerrar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            setActiveTab('inventario')
+          }
+        })
+      }
+    } catch (err) {
+      console.error('Error verificando stock:', err)
+    }
+  }
 
   useEffect(() => { fetchData() }, [activeTab, filtros])
 
@@ -209,7 +244,7 @@ export default function Admin({ user, onLogout }) {
   const tabs = [
     { id: 'ubicaciones', label: 'Ubicaciones' },
     { id: 'menu', label: 'Menú' },
-    { id: 'inventario', label: 'Inventario' },
+    { id: 'inventario', label: 'Inventario' + (stockAlerts.length > 0 ? ` (${stockAlerts.length} ⚠️)` : '') },
     { id: 'usuarios', label: 'Usuarios' },
     { id: 'empresa', label: 'Empresa' },
     { id: 'reportes', label: 'Reportes' },

@@ -34,6 +34,32 @@ module.exports = (pool) => {
     }
   });
 
+  router.get('/stock-bajo', async (req, res) => {
+    try {
+      const result = await pool.query(
+        `SELECT p.*, c.nombre as categoria_nombre 
+         FROM productos p 
+         LEFT JOIN categorias c ON p.categoria_id = c.id 
+         WHERE p.stock <= p.stock_minimo AND p.disponible = true
+         ORDER BY p.stock ASC`
+      );
+      res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  router.get('/bajo-stock-count', async (req, res) => {
+    try {
+      const result = await pool.query(
+        `SELECT COUNT(*) as count FROM productos WHERE stock <= stock_minimo AND disponible = true`
+      );
+      res.json({ count: parseInt(result.rows[0].count) });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   router.post('/', async (req, res) => {
     try {
       const { nombre, descripcion, precio, categoria_id, imagen, tiempo_preparacion, stock, stock_minimo } = req.body;
