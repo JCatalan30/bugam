@@ -14,9 +14,9 @@ COPY init.sql ./
 
 RUN npm run build
 
-EXPOSE 10000
+EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:10000/ || exit 1
+  CMD curl -f http://localhost:3000/ || exit 1
 
 CMD sh -c "echo '=== Starting ===' && sleep 15 && node bugam-backend/src/index.js"
