@@ -89,6 +89,7 @@ docker-compose up --build
 - `configuracion` - Configuración del sistema
 - `bitacora` - Bitácora de acciones
 - `reservaciones` - Reservaciones de mesas/hamacas
+- `bitacora_login` - Logs de intentos de login
 
 ## 8. Roles de Usuario
 
@@ -398,13 +399,47 @@ Todas las funcionalidades planificadas han sido implementadas:
 
 ---
 
-## 18. Despliegue
+## 18. Seguridad
+
+### 18.1 Rate Limiting
+- **Login**: Máximo 5 intentos por IP en 15 minutos
+- Bloqueo de 15 minutos después de 5 intentos fallidos
+- Retorna error 429 cuando está bloqueado
+
+### 18.2 Headers de Seguridad
+- **Helmet.js** integrado en Express
+- CSP, XSS Protection, Clickjacking protection
+- Hide X-Powered-By header
+
+### 18.3 Validación de Inputs
+- Sanitización de strings (trim, evitar HTML/JS injection)
+- Validación de tipos de datos
+- Validación de longitud de campos
+- Validación de rangos (precios positivos, stock >= 0)
+- Errores 400 con mensajes claros
+
+### 18.4 Logs de Seguridad
+- **bitacora_login**: Registro de intentos de login
+  - IP del cliente
+  - Username intentado
+  - Resultado (éxito/fallido)
+  - Timestamp
+
+### 18.5 Recomendaciones Adicionales
+- Cambiar contraseña de admin periódicamente
+- Usar HTTPS (ya configurado en Render)
+- No exponer DATABASE_URL públicamente
+
+---
+
+## 20. Despliegue
 
 ### Actualizar Base de Datos en Producción
 
-Al agregar nuevas tablas (como `reservaciones`), ejecutar en la base de datos de Render:
+Al agregar nuevas tablas, ejecutar en la base de datos de Render:
 
 ```sql
+-- Reservaciones
 CREATE TABLE reservaciones (
     id SERIAL PRIMARY KEY,
     ubicacion_id INTEGER REFERENCES ubicaciones(id),
@@ -417,6 +452,15 @@ CREATE TABLE reservaciones (
     notas TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Bitácora de Login
+CREATE TABLE bitacora_login (
+    id SERIAL PRIMARY KEY,
+    ip VARCHAR(45),
+    username VARCHAR(100),
+    resultado VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
