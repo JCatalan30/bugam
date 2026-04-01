@@ -21,6 +21,7 @@ export default function Admin({ user, onLogout }) {
   const [editItem, setEditItem] = useState(null)
   const [filtros, setFiltros] = useState({ fecha_inicio: '', fecha_fin: '' })
   const [busqueda, setBusqueda] = useState('')
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   useEffect(() => { setBusqueda('') }, [activeTab])
 
@@ -161,6 +162,29 @@ export default function Admin({ user, onLogout }) {
     )
   }
 
+  const uploadImage = async (file) => {
+    if (!file) return
+    setUploadingImage(true)
+    try {
+      const formData = new FormData()
+      formData.append('image', file)
+      const res = await fetch('https://api.imgbb.com/1/upload?key=abf2cb228f2a6e3a3e30c3c9d30e6c5f', {
+        method: 'POST',
+        body: formData
+      })
+      const data = await res.json()
+      if (data.success) {
+        setEditItem({ ...editItem, imagen: data.data.url })
+        Swal.fire({ icon: 'success', title: 'Imagen subida', timer: 1500 })
+      } else {
+        Swal.fire({ icon: 'error', title: 'Error al subir imagen' })
+      }
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Error al subir imagen' })
+    }
+    setUploadingImage(false)
+  }
+
   const generarReportePDF = () => {
     if (!reportes) return
     const printContent = `
@@ -254,7 +278,7 @@ export default function Admin({ user, onLogout }) {
               
               {editItem.type === 'categoria' && (<form onSubmit={e => { e.preventDefault(); saveCategoria(editItem); setEditItem(null) }}><div className="form-group"><label className="label">Nombre</label><input className="input" value={editItem.nombre || ''} onChange={e => setEditItem({...editItem, nombre: e.target.value})} /></div><div className="form-group"><label className="label">Orden</label><input type="number" className="input" value={editItem.orden || 0} onChange={e => setEditItem({...editItem, orden: parseInt(e.target.value)})} /></div><div className="flex gap-2"><button type="submit" className="btn btn-primary">Guardar</button><button type="button" className="btn btn-secondary" onClick={() => setEditItem(null)}>Cancelar</button></div></form>)}
               
-              {editItem.type === 'producto' && (<form onSubmit={e => { e.preventDefault(); saveProducto(editItem); setEditItem(null) }}><div className="form-group"><label className="label">Nombre</label><input className="input" value={editItem.nombre || ''} onChange={e => setEditItem({...editItem, nombre: e.target.value})} /></div><div className="form-group"><label className="label">Precio</label><input type="number" step="0.01" className="input" value={editItem.precio || ''} onChange={e => setEditItem({...editItem, precio: parseFloat(e.target.value)})} /></div><div className="form-group"><label className="label">Categoría</label><select className="input" value={editItem.categoria_id || ''} onChange={e => setEditItem({...editItem, categoria_id: parseInt(e.target.value)})}><option value="">Seleccionar</option>{categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div><div className="form-group"><label className="label">Stock</label><input type="number" className="input" value={editItem.stock || 0} onChange={e => setEditItem({...editItem, stock: parseInt(e.target.value)})} /></div><div className="form-group"><label className="label">Stock Mínimo</label><input type="number" className="input" value={editItem.stock_minimo || 5} onChange={e => setEditItem({...editItem, stock_minimo: parseInt(e.target.value)})} /></div><div className="form-group"><label className="label">URL Imagen</label><input className="input" placeholder="https://..." value={editItem.imagen || ''} onChange={e => setEditItem({...editItem, imagen: e.target.value})} />{editItem.imagen && <img src={editItem.imagen} alt="Preview" style={{marginTop: 10, maxWidth: 150, maxHeight: 150, borderRadius: 8, objectFit: 'cover'}} onError={e => e.target.style.display = 'none'} />}</div><div className="form-group"><label className="label">Tiempo (min)</label><input type="number" className="input" value={editItem.tiempo_preparacion || 15} onChange={e => setEditItem({...editItem, tiempo_preparacion: parseInt(e.target.value)})} /></div><div className="form-group"><label className="label">Descripción</label><textarea className="input" value={editItem.descripcion || ''} onChange={e => setEditItem({...editItem, descripcion: e.target.value})} /></div><div className="flex gap-2"><button type="submit" className="btn btn-primary">Guardar</button><button type="button" className="btn btn-secondary" onClick={() => setEditItem(null)}>Cancelar</button></div></form>)}
+              {editItem.type === 'producto' && (<form onSubmit={e => { e.preventDefault(); saveProducto(editItem); setEditItem(null) }}><div className="form-group"><label className="label">Nombre</label><input className="input" value={editItem.nombre || ''} onChange={e => setEditItem({...editItem, nombre: e.target.value})} /></div><div className="form-group"><label className="label">Precio</label><input type="number" step="0.01" className="input" value={editItem.precio || ''} onChange={e => setEditItem({...editItem, precio: parseFloat(e.target.value)})} /></div><div className="form-group"><label className="label">Categoría</label><select className="input" value={editItem.categoria_id || ''} onChange={e => setEditItem({...editItem, categoria_id: parseInt(e.target.value)})}><option value="">Seleccionar</option>{categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div><div className="form-group"><label className="label">Stock</label><input type="number" className="input" value={editItem.stock || 0} onChange={e => setEditItem({...editItem, stock: parseInt(e.target.value)})} /></div><div className="form-group"><label className="label">Stock Mínimo</label><input type="number" className="input" value={editItem.stock_minimo || 5} onChange={e => setEditItem({...editItem, stock_minimo: parseInt(e.target.value)})} /></div><div className="form-group"><label className="label">Imagen del Producto</label><input type="file" accept="image/*" className="input" onChange={e => uploadImage(e.target.files[0])} disabled={uploadingImage} />{uploadingImage && <p>Subiendo imagen...</p>}<div style={{marginTop: 10}}><input className="input" placeholder="O pega una URL..." value={editItem.imagen || ''} onChange={e => setEditItem({...editItem, imagen: e.target.value})} /></div>{editItem.imagen && <img src={editItem.imagen} alt="Preview" style={{marginTop: 10, maxWidth: 150, maxHeight: 150, borderRadius: 8, objectFit: 'cover'}} onError={e => e.target.style.display = 'none'} />}</div><div className="form-group"><label className="label">Tiempo (min)</label><input type="number" className="input" value={editItem.tiempo_preparacion || 15} onChange={e => setEditItem({...editItem, tiempo_preparacion: parseInt(e.target.value)})} /></div><div className="form-group"><label className="label">Descripción</label><textarea className="input" value={editItem.descripcion || ''} onChange={e => setEditItem({...editItem, descripcion: e.target.value})} /></div><div className="flex gap-2"><button type="submit" className="btn btn-primary">Guardar</button><button type="button" className="btn btn-secondary" onClick={() => setEditItem(null)}>Cancelar</button></div></form>)}
               
               {editItem.type === 'usuario' && (<form onSubmit={e => { e.preventDefault(); saveUsuario(editItem); setEditItem(null) }}><div className="form-group"><label className="label">Usuario</label><input className="input" value={editItem.username || ''} onChange={e => setEditItem({...editItem, username: e.target.value})} disabled={!!editItem.id} /></div>{!editItem.id && <div className="form-group"><label className="label">Contraseña</label><input type="password" className="input" value={editItem.password || ''} onChange={e => setEditItem({...editItem, password: e.target.value})} />{editItem.id && <small>Dejar vacío para mantener</small>}</div>}{editItem.id && <div className="form-group"><label className="label">Nueva contraseña</label><input type="password" className="input" value={editItem.password || ''} onChange={e => setEditItem({...editItem, password: e.target.value})} /></div>}<div className="form-group"><label className="label">Nombre</label><input className="input" value={editItem.nombre || ''} onChange={e => setEditItem({...editItem, nombre: e.target.value})} /></div><div className="form-group"><label className="label">Rol</label><select className="input" value={editItem.rol_id || ''} onChange={e => setEditItem({...editItem, rol_id: parseInt(e.target.value)})}><option value="">Seleccionar</option>{roles.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}</select></div>{editItem.id && <div className="form-group"><label className="label">Estado</label><select className="input" value={editItem.activo ? 'true' : 'false'} onChange={e => setEditItem({...editItem, activo: e.target.value === 'true'})}><option value="true">Activo</option><option value="false">Inactivo</option></select></div>}<div className="flex gap-2"><button type="submit" className="btn btn-primary">Guardar</button><button type="button" className="btn btn-secondary" onClick={() => setEditItem(null)}>Cancelar</button></div></form>)}
             </div>
