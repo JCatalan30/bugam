@@ -213,13 +213,27 @@ export default function Mesero({ user, onLogout }) {
     if (!result.isConfirmed) return
 
     try {
-      await fetch(`${API_URL}/cuentas/${cuentaActual.id}`, {
+      const cuentaId = cuentaActual.id
+      console.log('Cerrando cuenta:', cuentaId)
+      
+      const res = await fetch(`${API_URL}/cuentas/${cuentaId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estado: 'PENDIENTE_PAGO', usuario_id: user.id })
+        body: JSON.stringify({ estado: 'PENDIENTE_PAGO', usuario_id: user?.id })
       })
       
-      await imprimirTicket()
+      console.log('Response:', res.status)
+      
+      if (res.ok) {
+        const data = await res.json()
+        console.log('Cuenta actualizada:', data)
+        Swal.fire({ icon: 'info', title: 'Generando ticket...', timer: 1500, showConfirmButton: false })
+        setTimeout(() => imprimirTicket(), 300)
+      } else {
+        const error = await res.text()
+        console.error('Error:', error)
+        Swal.fire({ icon: 'error', title: 'Error al cerrar cuenta', text: error })
+      }
       
       setCuentaActual(null)
       setPedidoActual([])
@@ -227,6 +241,7 @@ export default function Mesero({ user, onLogout }) {
       Swal.fire({ icon: 'success', title: 'Cuenta cerrada', text: 'Diríjase a Caja para procesar el pago', timer: 3000 })
     } catch (err) {
       console.error(err)
+      Swal.fire({ icon: 'error', title: 'Error al cerrar cuenta' })
     }
   }
 
