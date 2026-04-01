@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { sanitizeString, validateLength, validateRequiredFields } = require('../utils/validacion');
 
 const rateLimitStore = new Map();
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000;
@@ -80,6 +81,14 @@ module.exports = (pool) => {
       }
       
       const { username, password } = req.body;
+      
+      try {
+        validateRequiredFields({ username, password }, ['username', 'password']);
+        sanitizeString(username);
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
+      }
+      
       const result = await pool.query(
         'SELECT u.*, r.nombre as rol FROM usuarios u JOIN roles r ON u.rol_id = r.id WHERE u.username = $1 AND u.activo = true',
         [username]

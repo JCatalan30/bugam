@@ -1,3 +1,5 @@
+const { sanitizeString, validateNumber, validateLength } = require('../utils/validacion');
+
 module.exports = (pool) => {
   const router = require('express').Router();
 
@@ -59,6 +61,18 @@ module.exports = (pool) => {
     try {
       const { cuenta_id, mesero_id, tipo, notas, detalles } = req.body;
       
+      try {
+        validateNumber(cuenta_id, 'cuenta_id');
+        validateNumber(mesero_id, 'mesero_id');
+        if (tipo) validateLength(tipo, 'tipo', 1, 20);
+        if (notas) sanitizeString(notas);
+        if (detalles !== undefined && !Array.isArray(detalles)) {
+          throw new Error('detalles debe ser un array');
+        }
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
+      }
+      
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
@@ -106,6 +120,13 @@ module.exports = (pool) => {
     const io = req.app.get('io');
     try {
       const { estado, usuario_id } = req.body;
+      
+      try {
+        if (estado) validateLength(estado, 'estado', 1, 20);
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
+      }
+      
       const result = await pool.query(
         'UPDATE pedidos SET estado = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
         [estado, req.params.id]
@@ -147,6 +168,12 @@ module.exports = (pool) => {
     try {
       const { estado } = req.body;
       console.log('Updating detail:', req.params.id, 'to estado:', estado);
+      
+      try {
+        if (estado) validateLength(estado, 'estado', 1, 20);
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
+      }
       
       const result = await pool.query(
         'UPDATE detalles_pedido SET estado = $1 WHERE id = $2 RETURNING *',

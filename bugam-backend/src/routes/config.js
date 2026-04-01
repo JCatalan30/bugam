@@ -1,3 +1,5 @@
+const { sanitizeString, validateLength, validateRequiredFields } = require('../utils/validacion');
+
 module.exports = (pool) => {
   const router = require('express').Router();
 
@@ -13,6 +15,15 @@ module.exports = (pool) => {
   router.put('/', async (req, res) => {
     try {
       const { clave, valor } = req.body;
+      
+      try {
+        validateRequiredFields({ clave, valor }, ['clave', 'valor']);
+        validateLength(clave, 'clave', 1, 50);
+        sanitizeString(valor);
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
+      }
+      
       const result = await pool.query(
         'UPDATE configuracion SET valor = $1, updated_at = CURRENT_TIMESTAMP WHERE clave = $2 RETURNING *',
         [valor, clave]

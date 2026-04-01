@@ -1,3 +1,5 @@
+const { sanitizeString, validateNumber, validatePositiveNumber } = require('../utils/validacion');
+
 module.exports = (pool) => {
   const router = require('express').Router();
 
@@ -42,6 +44,16 @@ module.exports = (pool) => {
     const io = req.app.get('io');
     try {
       const { cuenta_id, metodo_pago_id, monto, referencia, notas } = req.body;
+      
+      try {
+        validateNumber(cuenta_id, 'cuenta_id');
+        validateNumber(metodo_pago_id, 'metodo_pago_id');
+        validatePositiveNumber(monto, 'monto');
+        if (referencia) sanitizeString(referencia);
+        if (notas) sanitizeString(notas);
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
+      }
       
       const client = await pool.connect();
       try {

@@ -1,3 +1,5 @@
+const { sanitizeString, validateNumber, validatePositiveNumber, validateNonNegativeNumber, validateLength } = require('../utils/validacion');
+
 module.exports = (pool) => {
   const router = require('express').Router();
 
@@ -63,6 +65,20 @@ module.exports = (pool) => {
   router.post('/', async (req, res) => {
     try {
       const { nombre, descripcion, precio, categoria_id, imagen, tiempo_preparacion, stock, stock_minimo } = req.body;
+      
+      try {
+        validateLength(nombre, 'nombre', 1, 100);
+        if (descripcion) sanitizeString(descripcion);
+        validatePositiveNumber(precio, 'precio');
+        if (categoria_id) validateNumber(categoria_id, 'categoria_id');
+        if (imagen) sanitizeString(imagen);
+        if (tiempo_preparacion !== undefined) validateNonNegativeNumber(tiempo_preparacion, 'tiempo_preparacion');
+        if (stock !== undefined) validateNonNegativeNumber(stock, 'stock');
+        if (stock_minimo !== undefined) validateNonNegativeNumber(stock_minimo, 'stock_minimo');
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
+      }
+      
       const result = await pool.query(
         'INSERT INTO productos (nombre, descripcion, precio, categoria_id, imagen, tiempo_preparacion, stock, stock_minimo) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
         [nombre, descripcion, precio, categoria_id, imagen, tiempo_preparacion || 15, stock || 0, stock_minimo || 5]
@@ -76,6 +92,25 @@ module.exports = (pool) => {
   router.put('/:id', async (req, res) => {
     try {
       const { nombre, descripcion, precio, categoria_id, imagen, disponible, tiempo_preparacion, stock, stock_minimo } = req.body;
+      
+      try {
+        if (nombre) validateLength(nombre, 'nombre', 1, 100);
+        if (descripcion) sanitizeString(descripcion);
+        if (precio !== undefined) validatePositiveNumber(precio, 'precio');
+        if (categoria_id !== undefined) validateNumber(categoria_id, 'categoria_id');
+        if (imagen) sanitizeString(imagen);
+        if (disponible !== undefined) {
+          if (typeof disponible !== 'boolean') {
+            throw new Error('disponible debe ser un valor booleano');
+          }
+        }
+        if (tiempo_preparacion !== undefined) validateNonNegativeNumber(tiempo_preparacion, 'tiempo_preparacion');
+        if (stock !== undefined) validateNonNegativeNumber(stock, 'stock');
+        if (stock_minimo !== undefined) validateNonNegativeNumber(stock_minimo, 'stock_minimo');
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
+      }
+      
       const result = await pool.query(
         'UPDATE productos SET nombre = COALESCE($1, nombre), descripcion = COALESCE($2, descripcion), precio = COALESCE($3, precio), categoria_id = COALESCE($4, categoria_id), imagen = COALESCE($5, imagen), disponible = COALESCE($6, disponible), tiempo_preparacion = COALESCE($7, tiempo_preparacion), stock = COALESCE($8, stock), stock_minimo = COALESCE($9, stock_minimo), updated_at = CURRENT_TIMESTAMP WHERE id = $10 RETURNING *',
         [nombre, descripcion, precio, categoria_id, imagen, disponible, tiempo_preparacion, stock, stock_minimo, req.params.id]

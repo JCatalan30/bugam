@@ -1,3 +1,5 @@
+const { sanitizeString, validateNumber, validateLength } = require('../utils/validacion');
+
 module.exports = (pool) => {
   const router = require('express').Router();
 
@@ -111,6 +113,15 @@ module.exports = (pool) => {
     try {
       const { ubicacion_id, mesero_id, cliente_nombre, notas } = req.body;
       
+      try {
+        validateNumber(ubicacion_id, 'ubicacion_id');
+        validateNumber(mesero_id, 'mesero_id');
+        if (cliente_nombre) sanitizeString(cliente_nombre);
+        if (notas) sanitizeString(notas);
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
+      }
+      
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
@@ -148,6 +159,15 @@ module.exports = (pool) => {
     const io = req.app.get('io');
     try {
       const { notas, cliente_nombre, estado, usuario_id } = req.body;
+      
+      try {
+        if (notas) sanitizeString(notas);
+        if (cliente_nombre) sanitizeString(cliente_nombre);
+        if (estado) validateLength(estado, 'estado', 1, 50);
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
+      }
+      
       const cuentaActual = await pool.query('SELECT * FROM cuentas WHERE id = $1', [req.params.id]);
       const result = await pool.query(
         'UPDATE cuentas SET notas = COALESCE($1, notas), cliente_nombre = COALESCE($2, cliente_nombre), estado = COALESCE($3, estado) WHERE id = $4 RETURNING *',

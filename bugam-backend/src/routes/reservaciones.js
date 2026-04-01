@@ -1,3 +1,5 @@
+const { sanitizeString, validateNumber, validateLength, validateRequiredFields } = require('../utils/validacion');
+
 module.exports = (pool) => {
   const router = require('express').Router();
 
@@ -18,6 +20,18 @@ module.exports = (pool) => {
   router.post('/', async (req, res) => {
     try {
       const { ubicacion_id, cliente_nombre, telefono, fecha_reserva, hora_reserva, num_personas, notas } = req.body;
+      
+      try {
+        validateRequiredFields({ ubicacion_id, cliente_nombre, fecha_reserva, hora_reserva }, ['ubicacion_id', 'cliente_nombre', 'fecha_reserva', 'hora_reserva']);
+        validateNumber(ubicacion_id, 'ubicacion_id');
+        sanitizeString(cliente_nombre);
+        if (telefono) sanitizeString(telefono);
+        if (num_personas !== undefined) validateNumber(num_personas, 'num_personas');
+        if (notas) sanitizeString(notas);
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
+      }
+      
       const result = await pool.query(
         `INSERT INTO reservaciones (ubicacion_id, cliente_nombre, telefono, fecha_reserva, hora_reserva, num_personas, notas) 
          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
@@ -31,8 +45,19 @@ module.exports = (pool) => {
 
   router.put('/:id', async (req, res) => {
     try {
-      const { id } = req.params;
       const { estado, ubicacion_id, cliente_nombre, telefono, fecha_reserva, hora_reserva, num_personas, notas } = req.body;
+      
+      try {
+        if (estado) validateLength(estado, 'estado', 1, 20);
+        if (ubicacion_id !== undefined) validateNumber(ubicacion_id, 'ubicacion_id');
+        if (cliente_nombre) sanitizeString(cliente_nombre);
+        if (telefono) sanitizeString(telefono);
+        if (num_personas !== undefined) validateNumber(num_personas, 'num_personas');
+        if (notas) sanitizeString(notas);
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
+      }
+      
       const result = await pool.query(
         `UPDATE reservaciones SET 
           estado = COALESCE($1, estado),
@@ -44,7 +69,7 @@ module.exports = (pool) => {
           num_personas = COALESCE($7, num_personas),
           notas = COALESCE($8, notas)
          WHERE id = $9 RETURNING *`,
-        [estado, ubicacion_id, cliente_nombre, telefono, fecha_reserva, hora_reserva, num_personas, notas, id]
+         [estado, ubicacion_id, cliente_nombre, telefono, fecha_reserva, hora_reserva, num_personas, notas, req.params.id]
       );
       res.json(result.rows[0]);
     } catch (err) {
