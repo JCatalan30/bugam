@@ -216,7 +216,7 @@ export default function Mesero({ user, onLogout }) {
       await fetch(`${API_URL}/cuentas/${cuentaActual.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estado: 'PENDIENTE_PAGO' })
+        body: JSON.stringify({ estado: 'PENDIENTE_PAGO', usuario_id: user.id })
       })
       
       await imprimirTicket()

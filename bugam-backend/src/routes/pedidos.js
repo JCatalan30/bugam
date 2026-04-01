@@ -43,6 +43,17 @@ module.exports = (pool) => {
     }
   });
 
+  const registrarBitacora = async (usuario_id, accion, entidad, entidad_id, detalles) => {
+    try {
+      await pool.query(
+        'INSERT INTO bitacora (usuario_id, accion, entidad, entidad_id, detalles) VALUES ($1, $2, $3, $4, $5)',
+        [usuario_id, accion, entidad, entidad_id, detalles ? JSON.stringify(detalles) : null]
+      );
+    } catch (err) {
+      console.error('Error bitácora:', err.message);
+    }
+  };
+
   router.post('/', async (req, res) => {
     const io = req.app.get('io');
     try {
@@ -58,7 +69,7 @@ module.exports = (pool) => {
         );
         const pedido = pedidoResult.rows[0];
         
-        for (const det of detalles) {
+        for (const det of detalles || []) {
           await client.query(
             'INSERT INTO detalles_pedido (pedido_id, producto_id, cantidad, precio_unitario, subtotal, notas) VALUES ($1, $2, $3, $4, $5, $6)',
             [pedido.id, det.producto_id, det.cantidad, det.precio_unitario, det.subtotal, det.notas]
@@ -73,6 +84,8 @@ module.exports = (pool) => {
         );
         
         await client.query('COMMIT');
+        
+        await registrarBitacora(mesero_id, 'CREAR', 'PEDIDO', pedido.id, { cuenta_id, tipo, notas, num_detalles: detalles?.length || 0 });
         
         io.to('kitchen').emit('new-order', pedido);
         io.to('waiter').emit('order-created', pedido);
@@ -92,11 +105,13 @@ module.exports = (pool) => {
   router.put('/:id', async (req, res) => {
     const io = req.app.get('io');
     try {
-      const { estado } = req.body;
+      const { estado, usuario_id } = req.body;
       const result = await pool.query(
         'UPDATE pedidos SET estado = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
         [estado, req.params.id]
       );
+      
+      await registrarBitacora(usuario_id, 'ACTUALIZAR', 'PEDIDO', req.params.id, { estado_anterior: result.rows[0].estado, estado_nuevo: estado });
       
       const pedidoActualizado = { ...result.rows[0], cuenta_id: result.rows[0].cuenta_id };
       io.to('waiter').emit('order-updated', pedidoActualizado);

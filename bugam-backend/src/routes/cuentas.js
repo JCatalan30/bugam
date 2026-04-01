@@ -1,6 +1,17 @@
 module.exports = (pool) => {
   const router = require('express').Router();
 
+  const registrarBitacora = async (usuario_id, accion, entidad, entidad_id, detalles) => {
+    try {
+      await pool.query(
+        'INSERT INTO bitacora (usuario_id, accion, entidad, entidad_id, detalles) VALUES ($1, $2, $3, $4, $5)',
+        [usuario_id, accion, entidad, entidad_id, detalles ? JSON.stringify(detalles) : null]
+      );
+    } catch (err) {
+      console.error('Error bitácora:', err.message);
+    }
+  };
+
   router.get('/', async (req, res) => {
     try {
       const { estado } = req.query;
@@ -111,6 +122,8 @@ module.exports = (pool) => {
         const cuenta = cuentaResult.rows[0];
         io.emit('cuenta-created', cuenta);
         
+        await registrarBitacora(mesero_id, 'CREAR', 'CUENTA', cuenta.id, { ubicacion_id, cliente_nombre });
+        
         res.json(cuenta);
       } catch (err) {
         await client.query('ROLLBACK');
@@ -125,11 +138,17 @@ module.exports = (pool) => {
 
   router.put('/:id', async (req, res) => {
     try {
-      const { notas, cliente_nombre, estado } = req.body;
+      const { notas, cliente_nombre, estado, usuario_id } = req.body;
+      const cuentaActual = await pool.query('SELECT * FROM cuentas WHERE id = $1', [req.params.id]);
       const result = await pool.query(
         'UPDATE cuentas SET notas = COALESCE($1, notas), cliente_nombre = COALESCE($2, cliente_nombre), estado = COALESCE($3, estado) WHERE id = $4 RETURNING *',
         [notas, cliente_nombre, estado, req.params.id]
       );
+      
+      if (estado) {
+        await registrarBitacora(usuario_id, 'ACTUALIZAR', 'CUENTA', req.params.id, { estado_anterior: cuentaActual.rows[0]?.estado, estado_nuevo: estado });
+      }
+      
       res.json(result.rows[0]);
     } catch (err) {
       res.status(500).json({ error: err.message });
