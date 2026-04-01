@@ -1,4 +1,11 @@
 node_modules
 dist
-*.log
+build
 .env
+.git
+*.log
+.DS_Store
+Dockerfile
+docker-compose*.yml
+vercel.json
+README.md

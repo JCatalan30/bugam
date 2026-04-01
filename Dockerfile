@@ -3,10 +3,11 @@ FROM node:18-alpine
 WORKDIR /app
 
 COPY bugam-backend/package*.json ./bugam-backend/
+COPY bugam-frontend/package*.json ./bugam-frontend/
+
 WORKDIR /app/bugam-backend
 RUN npm install
 
-COPY bugam-frontend/package*.json ./bugam-frontend/
 WORKDIR /app/bugam-frontend
 RUN npm install
 
@@ -14,7 +15,6 @@ COPY bugam-backend/ ./bugam-backend/
 COPY bugam-frontend/ ./bugam-frontend/
 COPY init.sql ./
 
-WORKDIR /app/bugam-frontend
 RUN npm run build
 
 WORKDIR /app
