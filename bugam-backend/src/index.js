@@ -25,7 +25,19 @@ const pool = new Pool({
 });
 
 app.use(cors());
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https://i.ibb.co", "https://imgbb.com"],
+      connectSrc: ["'self'", "https://api.imgbb.com"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"]
+    }
+  }
+}));
 app.use(express.json());
 
 app.set('io', io);
