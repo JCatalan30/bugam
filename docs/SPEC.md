@@ -198,6 +198,7 @@ bugam2026/
 - `GET /api/reportes/corte-caja` - Corte de caja
 - `GET /api/reportes/bitacora` - Bitácora reciente
 - `GET /api/reportes/clientes-frecuentes` - Clientes frecuentes
+- `GET /api/reportes/ventas-usuario` - Ventas por usuario (mesero/cajero)
 
 ## 12. Funcionalidades Implementadas
 
@@ -242,6 +243,7 @@ bugam2026/
 - **Histórico**: Ventas por fecha, cuentas cerradas
 - **Bitácora**: Registro de acciones del sistema
 - **Clientes frecuentes**: Análisis de clientes
+- **Ventas por Usuario**: Ventas por mesero/cajero con filtros de fecha
 - **Búsqueda**: Filtrar productos, ubicaciones, usuarios
 
 ### 12.5 Tickets

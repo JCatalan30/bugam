@@ -17,6 +17,8 @@ export default function Admin({ user, onLogout }) {
   const [corteCaja, setCorteCaja] = useState(null)
   const [bitacora, setBitacora] = useState([])
   const [clientes, setClientes] = useState([])
+  const [ventasUsuario, setVentasUsuario] = useState([])
+  const [reservaciones, setReservaciones] = useState([])
   const [loading, setLoading] = useState(true)
   const [editItem, setEditItem] = useState(null)
   const [filtros, setFiltros] = useState({ fecha_inicio: '', fecha_fin: '' })
@@ -111,6 +113,16 @@ export default function Admin({ user, onLogout }) {
       } else if (activeTab === 'clientes') {
         const res = await fetch(`${API_URL}/reportes/clientes-frecuentes`)
         setClientes(await res.json())
+      } else if (activeTab === 'ventas-usuario') {
+        const res = await fetch(`${API_URL}/reportes/ventas-usuario?fecha_inicio=${filtros.fecha_inicio || ''}&fecha_fin=${filtros.fecha_fin || ''}`)
+        setVentasUsuario(await res.json())
+      } else if (activeTab === 'reservaciones') {
+        const [resRes, ubiRes] = await Promise.all([
+          fetch(`${API_URL}/reservaciones`),
+          fetch(`${API_URL}/ubicaciones`)
+        ])
+        setReservaciones(await resRes.json())
+        setUbicaciones(await ubiRes.json())
       }
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
@@ -187,6 +199,35 @@ export default function Admin({ user, onLogout }) {
     } catch (err) { Swal.fire({ icon: 'error', title: 'Error' }) }
   }
 
+  const saveReservacion = async (data) => {
+    try {
+      const method = data.id ? 'PUT' : 'POST'
+      const url = data.id ? `${API_URL}/reservaciones/${data.id}` : `${API_URL}/reservaciones`
+      await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+      setEditItem(null)
+      fetchData()
+      Swal.fire({ icon: 'success', title: 'Guardado', timer: 2000 })
+    } catch (err) { Swal.fire({ icon: 'error', title: 'Error' }) }
+  }
+
+  const deleteReservacion = async (id) => {
+    const result = await Swal.fire({
+      title: '¿Cancelar reservación?',
+      text: 'Esta acción no se puede deshacer',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, Cancelar',
+      cancelButtonText: 'No'
+    })
+    if (result.isConfirmed) {
+      try {
+        await fetch(`${API_URL}/reservaciones/${id}`, { method: 'DELETE' })
+        fetchData()
+        Swal.fire({ icon: 'success', title: 'Cancelada', timer: 2000 })
+      } catch (err) { Swal.fire({ icon: 'error', title: 'Error al cancelar' }) }
+    }
+  }
+
   const filtrar = (lista) => {
     if (!busqueda) return lista
     const lower = busqueda.toLowerCase()
@@ -247,11 +288,13 @@ export default function Admin({ user, onLogout }) {
     { id: 'inventario', label: 'Inventario' + (stockAlerts.length > 0 ? ` (${stockAlerts.length} ⚠️)` : '') },
     { id: 'usuarios', label: 'Usuarios' },
     { id: 'empresa', label: 'Empresa' },
+    { id: 'reservaciones', label: 'Reservaciones' },
     { id: 'reportes', label: 'Reportes' },
     { id: 'corte', label: 'Corte' },
     { id: 'historico', label: 'Histórico' },
     { id: 'bitacora', label: 'Bitácora' },
-    { id: 'clientes', label: 'Clientes' }
+    { id: 'clientes', label: 'Clientes' },
+    { id: 'ventas-usuario', label: 'Ventas por Usuario' }
   ]
 
   return (
@@ -272,7 +315,7 @@ export default function Admin({ user, onLogout }) {
           <div className="tabs">{tabs.map(t => (<button key={t.id} className={`tab ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>{t.label}</button>))}</div>
         </div>
 
-        {(activeTab === 'reportes' || activeTab === 'historico') && (
+        {(activeTab === 'reportes' || activeTab === 'historico' || activeTab === 'ventas-usuario') && (
           <div className="card mb-4" style={{display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center'}}>
             <label>Desde: <input type="date" className="input" style={{width: 'auto'}} value={filtros.fecha_inicio} onChange={e => setFiltros({...filtros, fecha_inicio: e.target.value})} /></label>
             <label>Hasta: <input type="date" className="input" style={{width: 'auto'}} value={filtros.fecha_fin} onChange={e => setFiltros({...filtros, fecha_fin: e.target.value})} /></label>
@@ -292,6 +335,8 @@ export default function Admin({ user, onLogout }) {
 
             {activeTab === 'empresa' && (<div><h2 className="mb-4">Datos de la Empresa</h2><div className="card" style={{maxWidth: 500}}><div className="form-group"><label className="label">Nombre</label><input className="input" value={config.nombre_establecimiento || ''} onChange={e => setConfig({...config, nombre_establecimiento: e.target.value})} /></div><div className="form-group"><label className="label">Dirección</label><input className="input" value={config.direccion || ''} onChange={e => setConfig({...config, direccion: e.target.value})} /></div><div className="form-group"><label className="label">Teléfono</label><input className="input" value={config.telefono || ''} onChange={e => setConfig({...config, telefono: e.target.value})} /></div><button className="btn btn-primary" onClick={saveConfig}>Guardar</button></div></div>)}
 
+            {activeTab === 'reservaciones' && (<div><div className="flex justify-between items-center mb-4"><h2>Reservaciones</h2><button className="btn btn-primary" onClick={() => setEditItem({ type: 'reservacion' })}>+ Nueva</button></div><div className="mb-4"><input type="text" className="input" placeholder="Buscar reservación..." value={busqueda} onChange={e => setBusqueda(e.target.value)} style={{maxWidth: 300}} /></div><div className="table-responsive"><table className="table"><thead><tr><th>Cliente</th><th>Teléfono</th><th>Ubicación</th><th>Fecha</th><th>Hora</th><th>Personas</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>{filtrar(reservaciones).map(r => (<tr key={r.id}><td>{r.cliente_nombre}</td><td>{r.telefono || '-'}</td><td>{r.ubicacion_nombre || '-'}</td><td>{r.fecha_reserva}</td><td>{r.hora_reserva}</td><td>{r.num_personas}</td><td><span className={`badge ${r.estado === 'CONFIRMADA' ? 'badge-success' : r.estado === 'CANCELADA' ? 'badge-danger' : 'badge-warning'}`}>{r.estado}</span></td><td><button className="btn btn-primary btn-sm" onClick={() => setEditItem({...r, type: 'reservacion'})}>Editar</button> <button className="btn btn-danger btn-sm" onClick={() => deleteReservacion(r.id)}>Cancelar</button></td></tr>))}</tbody></table>{filtrar(reservaciones).length === 0 && <p className="text-center text-gray">No se encontraron resultados</p>}</div></div>)}
+
             {activeTab === 'reportes' && reportes && (<div><div className="flex justify-between items-center mb-4"><h2>Reportes</h2><button className="btn btn-info" onClick={generarReportePDF}>📄 Exportar PDF</button></div><div className="grid grid-1 md:grid-3 gap-4 mb-4"><div className="card text-center"><p className="text-gray">Cuentas</p><p className="text-xl font-bold">{reportes.resumen?.cuentas?.total_cuentas || 0}</p></div><div className="card text-center"><p className="text-gray">Pedidos</p><p className="text-xl font-bold">{reportes.resumen?.pedidos?.total_pedidos || 0}</p></div><div className="card text-center"><p className="text-gray">Ventas</p><p className="text-xl font-bold">${reportes.resumen?.cuentas?.ventas || 0}</p></div></div><div className="card"><h3 className="mb-2">Productos Más Vendidos</h3><table className="table"><thead><tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr></thead><tbody>{reportes.productos?.map((p, i) => (<tr key={i}><td>{p.nombre}</td><td>{p.cantidad}</td><td>${Number(p.total).toFixed(2)}</td></tr>))}</tbody></table></div></div>)}
 
             {activeTab === 'corte' && corteCaja && (<div><h2 className="mb-4">Corte de Caja</h2><div className="grid grid-1 md:grid-2 gap-4"><div className="card"><h3>Resumen</h3><p>Cuentas cerradass: {corteCaja.resumen?.total_cuentas || 0}</p><p className="text-xl font-bold">Total: ${Number(corteCaja.resumen?.total_ventas || 0).toFixed(2)}</p></div><div className="card"><h3>Por Método de Pago</h3>{corteCaja.metodos_pago?.map((m, i) => (<p key={i}>{m.metodo}: ${Number(m.total).toFixed(2)}</p>))}</div></div><div className="card mt-4"><h3>Top 5 Productos</h3>{corteCaja.productos_top?.map((p, i) => (<p key={i}>{p.nombre}: {p.cantidad} unidades</p>))}</div></div>)}
@@ -301,6 +346,8 @@ export default function Admin({ user, onLogout }) {
             {activeTab === 'bitacora' && (<div><h2 className="mb-4">Bitácora</h2><div className="table-responsive"><table className="table"><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Entidad</th></tr></thead><tbody>{bitacora.map((b, i) => (<tr key={i}><td>{new Date(b.created_at).toLocaleString()}</td><td>{b.usuario_nombre}</td><td>{b.accion}</td><td>{b.entidad}</td></tr>))}</tbody></table></div></div>)}
 
             {activeTab === 'clientes' && (<div><h2 className="mb-4">Clientes Frecuentes</h2><div className="table-responsive"><table className="table"><thead><tr><th>Cliente</th><th>Visitas</th><th>Gasto Total</th></tr></thead><tbody>{clientes.map((c, i) => (<tr key={i}><td>{c.cliente_nombre}</td><td>{c.visitas}</td><td>${Number(c.gasto_total).toFixed(2)}</td></tr>))}</tbody></table></div></div>)}
+
+            {activeTab === 'ventas-usuario' && (<div><h2 className="mb-4">Ventas por Usuario</h2><div className="table-responsive"><table className="table"><thead><tr><th>Usuario</th><th>Cuentas</th><th>Total Ventas</th><th>Pedidos</th></tr></thead><tbody>{ventasUsuario.map((u, i) => (<tr key={i}><td>{u.usuario_nombre}</td><td>{u.total_cuentas}</td><td>${Number(u.total_ventas).toFixed(2)}</td><td>{u.total_pedidos}</td></tr>))}</tbody></table>{ventasUsuario.length > 0 && <tfoot><tr style={{fontWeight: 'bold'}}><td>TOTALES</td><td>{ventasUsuario.reduce((a, u) => a + parseInt(u.total_cuentas), 0)}</td><td>${ventasUsuario.reduce((a, u) => a + parseFloat(u.total_ventas), 0).toFixed(2)}</td><td>{ventasUsuario.reduce((a, u) => a + parseInt(u.total_pedidos), 0)}</td></tr></tfoot>}</div></div>)}
           </>
         )}
 

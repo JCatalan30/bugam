@@ -151,5 +151,35 @@ module.exports = (pool) => {
     }
   });
 
+  router.get('/ventas-usuario', async (req, res) => {
+    try {
+      const { fecha_inicio, fecha_fin } = req.query;
+      let query = `SELECT u.id as usuario_id, u.nombre as usuario_nombre, 
+                   COUNT(DISTINCT c.id) as total_cuentas,
+                   COALESCE(SUM(c.total), 0) as total_ventas,
+                   COUNT(p.id) as total_pedidos
+                   FROM usuarios u
+                   LEFT JOIN cuentas c ON c.mesero_id = u.id AND c.estado = 'CERRADA'
+                   LEFT JOIN pedidos p ON p.cuenta_id = c.id
+                   WHERE u.rol_id IN (2, 3)`;
+      const params = [];
+
+      if (fecha_inicio) {
+        params.push(fecha_inicio);
+        query += ` AND c.fecha_cierre >= $${params.length}`;
+      }
+      if (fecha_fin) {
+        params.push(fecha_fin);
+        query += ` AND c.fecha_cierre <= $${params.length}`;
+      }
+
+      query += ' GROUP BY u.id, u.nombre ORDER BY total_ventas DESC';
+      const result = await pool.query(query, params);
+      res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   return router;
 };
