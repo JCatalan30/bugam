@@ -16,25 +16,27 @@ RUN npm run build
 
 RUN apk add --no-cache nginx curl
 
-RUN mkdir -p /etc/nginx/conf.d
 
-RUN echo 'server { \
-    listen 80; \
-    server_name _; \
-            root /app/bugam-frontend/dist; \
-    index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
+
+RUN echo 'http { \
+    server { \
+        listen 80; \
+        server_name _; \
+        root /app/bugam-frontend/dist; \
+        index index.html; \
+        location / { \
+            try_files $uri $uri/ /index.html; \
+        } \
+        location /api { \
+            proxy_pass http://localhost:3001; \
+            proxy_http_version 1.1; \
+            proxy_set_header Upgrade $http_upgrade; \
+            proxy_set_header Connection "upgrade"; \
+            proxy_set_header Host $host; \
+            proxy_set_header X-Real-IP $remote_addr; \
+        } \
     } \
-    location /api { \
-        proxy_pass http://localhost:3001; \
-        proxy_http_version 1.1; \
-        proxy_set_header Upgrade $http_upgrade; \
-        proxy_set_header Connection "upgrade"; \
-        proxy_set_header Host $host; \
-        proxy_set_header X-Real-IP $remote_addr; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+}' > /etc/nginx/nginx.conf
 
 EXPOSE 80
 
