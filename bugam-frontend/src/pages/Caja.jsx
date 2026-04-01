@@ -24,6 +24,8 @@ export default function Caja({ user, onLogout }) {
     socketRef.current = io({ transports: ['websocket', 'polling'] })
     socketRef.current.on('connect', () => { socketRef.current.emit('join-cashier') })
     socketRef.current.on('transferencia-pendiente', () => { fetchData() })
+    socketRef.current.on('order-updated', () => { fetchData() })
+    socketRef.current.on('cuenta-updated', () => { fetchData() })
   }
 
   const fetchData = async () => {
@@ -33,7 +35,9 @@ export default function Caja({ user, onLogout }) {
         fetch(`${API_URL}/pagos/metodos`),
         fetch(`${API_URL}/pagos/pendientes`)
       ])
-      setCuentas(await cuentasRes.json())
+      const cuentasData = await cuentasRes.json()
+      console.log('Cuentas:', cuentasData)
+      setCuentas(cuentasData)
       setMetodosPago(await metodosRes.json())
       setPagosPendientes(await pendientesRes.json())
     } catch (err) { console.error(err) }
@@ -120,7 +124,10 @@ export default function Caja({ user, onLogout }) {
 
         <div className="grid grid-2">
           <div>
-            <h2 className="mb-4">Cuentas Abiertas</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2>Cuentas Abiertas</h2>
+              <button className="btn btn-secondary" onClick={fetchData}>🔄 Actualizar</button>
+            </div>
             {cuentas.length === 0 ? (
               <p className="text-gray">No hay cuentas abiertas</p>
             ) : (

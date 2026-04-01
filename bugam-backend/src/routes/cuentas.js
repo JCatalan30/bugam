@@ -137,6 +137,7 @@ module.exports = (pool) => {
   });
 
   router.put('/:id', async (req, res) => {
+    const io = req.app.get('io');
     try {
       const { notas, cliente_nombre, estado, usuario_id } = req.body;
       const cuentaActual = await pool.query('SELECT * FROM cuentas WHERE id = $1', [req.params.id]);
@@ -147,6 +148,7 @@ module.exports = (pool) => {
       
       if (estado) {
         await registrarBitacora(usuario_id, 'ACTUALIZAR', 'CUENTA', req.params.id, { estado_anterior: cuentaActual.rows[0]?.estado, estado_nuevo: estado });
+        io.emit('cuenta-updated', result.rows[0]);
       }
       
       res.json(result.rows[0]);
