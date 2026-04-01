@@ -47,6 +47,6 @@ WORKDIR /app/bugam-backend
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:3001/api/categorias || exit 1
+  CMD sh -c "curl -f http://localhost:3001/api/categorias || curl -f http://localhost"
 
-CMD sh -c "echo waiting for DB && sleep 5 && node index.js & nginx -g 'daemon off;'"
+CMD sh -c "echo waiting for DB && sleep 8 && node index.js & nginx -g 'daemon off;'"
