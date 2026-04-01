@@ -1,0 +1,15 @@
+{
+  "name": "bugam",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "bugam-backend",
+    "bugam-frontend"
+  ],
+  "scripts": {
+    "build": "npm run build -w bugam-frontend",
+    "start": "npm run start -w bugam-backend"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}

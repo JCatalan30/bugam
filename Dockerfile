@@ -2,29 +2,24 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+COPY package*.json ./
 COPY bugam-backend/package*.json ./bugam-backend/
 COPY bugam-frontend/package*.json ./bugam-frontend/
 
-WORKDIR /app/bugam-backend
-RUN npm install
-
-WORKDIR /app/bugam-frontend
-RUN npm install
+RUN npm install --workspaces=true
 
 COPY bugam-backend/ ./bugam-backend/
 COPY bugam-frontend/ ./bugam-frontend/
 COPY init.sql ./
 
-RUN npx vite build
-
-WORKDIR /app
+RUN npm run build
 
 RUN mkdir -p nginx
 
 RUN echo 'server { \
     listen 80; \
     server_name _; \
-    root /app/bugam-frontend/dist; \
+    root /app/dist; \
     index index.html; \
     location / { \
         try_files $uri $uri/ /index.html; \
@@ -42,7 +37,7 @@ RUN echo 'server { \
 FROM nginx:alpine
 COPY --from=0 /app/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=0 /app/bugam-backend /app/bugam-backend
-COPY --from=0 /app/bugam-frontend/dist /app/bugam-frontend/dist
+COPY --from=0 /app/dist /app/dist
 COPY --from=0 /app/init.sql /init.sql
 
 RUN apk add --no-cache nodejs npm curl
