@@ -29,7 +29,7 @@ http { \
             try_files $uri $uri/ /index.html; \
         } \
         location /api { \
-            proxy_pass http://localhost:3001; \
+            proxy_pass http://localhost:10000; \
             proxy_http_version 1.1; \
             proxy_set_header Upgrade $http_upgrade; \
             proxy_set_header Connection "upgrade"; \
@@ -44,4 +44,4 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost/ || exit 1
 
-CMD sh -c "echo '=== Checking dist ===' && ls -la /app/bugam-frontend/dist/ && echo 'waiting for DB' && sleep 15 && node bugam-backend/src/index.js & nginx -g 'daemon off;'"
+CMD sh -c "echo '=== Checking dist ===' && ls -la /app/bugam-frontend/dist/ && echo 'waiting for DB' && sleep 15 && PORT=10000 node bugam-backend/src/index.js & nginx -g 'daemon off;'"
