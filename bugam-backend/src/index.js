@@ -4,6 +4,7 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const { Pool } = require('pg');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -24,6 +25,11 @@ const pool = new Pool({
 
 app.use(cors());
 app.use(express.json());
+
+app.use(express.static(path.join(__dirname, '../../bugam-frontend/dist')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../bugam-frontend/dist/index.html'));
+});
 
 app.set('io', io);
 app.set('db', pool);

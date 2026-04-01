@@ -14,34 +14,9 @@ COPY init.sql ./
 
 RUN npm run build
 
-RUN apk add --no-cache nginx curl
-
-
-
-RUN echo 'events { worker_connections 1024; } \
-http { \
-    server { \
-        listen 80; \
-        server_name _; \
-        root /app/bugam-frontend/dist; \
-        index index.html; \
-        location / { \
-            try_files $uri $uri/ /index.html; \
-        } \
-        location /api { \
-            proxy_pass http://localhost:10000; \
-            proxy_http_version 1.1; \
-            proxy_set_header Upgrade $http_upgrade; \
-            proxy_set_header Connection "upgrade"; \
-            proxy_set_header Host $host; \
-            proxy_set_header X-Real-IP $remote_addr; \
-        } \
-    } \
-}' > /etc/nginx/nginx.conf
-
-EXPOSE 80
+EXPOSE 10000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost/ || exit 1
+  CMD curl -f http://localhost:10000/ || exit 1
 
-CMD sh -c "echo '=== Checking dist ===' && ls -la /app/bugam-frontend/dist/ && echo 'waiting for DB' && sleep 15 && PORT=10000 node bugam-backend/src/index.js & nginx -g 'daemon off;'"
+CMD sh -c "echo '=== Starting ===' && sleep 15 && node bugam-backend/src/index.js"
